@@ -85,7 +85,7 @@
 
           config = lib.mkIf cfg.enable {
             home.activation.nixSpotlight = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-              ${self.packages.${pkgs.system}.default}/bin/nix-spotlight sync \
+              ${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/nix-spotlight sync \
                 ${lib.optionalString (!cfg.syncDock) "--no-dock"} \
                 "${cfg.sourceDir}" \
                 "${cfg.targetDir}"
@@ -126,7 +126,7 @@
           config = lib.mkIf cfg.enable {
             system.activationScripts.postActivation.text = ''
               echo "nix-spotlight: syncing trampolines..." >&2
-              ${self.packages.${pkgs.system}.default}/bin/nix-spotlight sync \
+              ${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/nix-spotlight sync \
                 ${lib.optionalString (!cfg.syncDock) "--no-dock"} \
                 "${cfg.sourceDir}" \
                 "${cfg.targetDir}"
