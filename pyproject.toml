@@ -1,0 +1,41 @@
+[project]
+name = "nix-spotlight"
+version = "0.1.0"
+description = "macOS Spotlight integration for Nix apps"
+readme = "README.md"
+license = "AGPL-3.0-only"
+requires-python = ">=3.13"
+
+[project.scripts]
+nix-spotlight = "nix_spotlight.__main__:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.mypy]
+strict = true
+python_version = "3.13"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "TCH"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src/nix_spotlight"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+]
