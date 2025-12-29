@@ -25,7 +25,7 @@ py.buildPythonApplication {
     runHook preCheck
     ruff check src/
     basedpyright src/
-    pytest tests/ -v --cov=nix_spotlight --cov-report=term-missing --cov-fail-under=100
+    pytest
     runHook postCheck
   '';
 

@@ -43,6 +43,7 @@ ignore = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-v --cov=nix_spotlight --cov-report=term-missing --cov-fail-under=100"
 
 [tool.coverage.run]
 source = ["src/nix_spotlight"]
