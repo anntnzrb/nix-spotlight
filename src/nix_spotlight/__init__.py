@@ -6,4 +6,4 @@ from .dock import sync_dock
 from .trampoline import create_trampoline, sync_trampolines
 from .types import App
 
-__all__ = ["__version__", "App", "create_trampoline", "sync_trampolines", "sync_dock"]
+__all__ = ["App", "__version__", "create_trampoline", "sync_dock", "sync_trampolines"]

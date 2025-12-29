@@ -106,8 +106,10 @@ def test_create_trampoline_creates_parent_dirs(tmp_path: Path) -> None:
 
 def test_gather_apps(tmp_path: Path) -> None:
     """Test gathering apps from directory."""
+    valid_app_names = ["App1.app", "App2.app"]
+
     # Create valid app
-    app1 = tmp_path / "App1.app"
+    app1 = tmp_path / valid_app_names[0]
     app1.mkdir()
     (app1 / "Contents").mkdir()
     (app1 / "Contents" / "Info.plist").touch()
@@ -115,7 +117,7 @@ def test_gather_apps(tmp_path: Path) -> None:
     # Create nested app
     nested = tmp_path / "Nested"
     nested.mkdir()
-    app2 = nested / "App2.app"
+    app2 = nested / valid_app_names[1]
     app2.mkdir()
     (app2 / "Contents").mkdir()
     (app2 / "Contents" / "Info.plist").touch()
@@ -126,9 +128,9 @@ def test_gather_apps(tmp_path: Path) -> None:
 
     apps = gather_apps(tmp_path)
 
-    assert len(apps) == 2
+    assert len(apps) == len(valid_app_names)
     names = {app.name for app in apps}
-    assert names == {"App1.app", "App2.app"}
+    assert names == set(valid_app_names)
 
 
 def test_gather_apps_empty_dir(tmp_path: Path) -> None:
@@ -177,7 +179,8 @@ def test_sync_trampolines(tmp_path: Path) -> None:
     source.mkdir()
     target = tmp_path / "target"
 
-    for name in ["App1.app", "App2.app"]:
+    app_names = ["App1.app", "App2.app"]
+    for name in app_names:
         app = source / name
         app.mkdir()
         (app / "Contents").mkdir()
@@ -185,10 +188,10 @@ def test_sync_trampolines(tmp_path: Path) -> None:
 
     trampolines = sync_trampolines(source, target)
 
-    assert len(trampolines) == 2
+    assert len(trampolines) == len(app_names)
     assert target.exists()
-    assert (target / "App1.app" / "Contents").is_symlink()
-    assert (target / "App2.app" / "Contents").is_symlink()
+    for name in app_names:
+        assert (target / name / "Contents").is_symlink()
 
 
 def test_sync_trampolines_cleans_existing(tmp_path: Path) -> None:

@@ -10,7 +10,7 @@ from .trampoline import sync_trampolines
 
 
 def main() -> int:
-    """Main entry point."""
+    """Run the nix-spotlight CLI."""
     parser = argparse.ArgumentParser(
         prog="nix-spotlight",
         description="macOS Spotlight integration for Nix apps",

@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 from nix_spotlight.dock import sync_dock
 
 
-def test_sync_dock_no_dockutil() -> None:
+def test_sync_dock_no_dockutil(tmp_path: Path) -> None:
     """Test sync_dock when dockutil is not available."""
-    apps = [Path("/tmp/App1.app"), Path("/tmp/App2.app")]
+    apps = [tmp_path / "App1.app", tmp_path / "App2.app"]
 
     with patch("shutil.which", return_value=None):
         result = sync_dock(apps)
@@ -16,9 +16,9 @@ def test_sync_dock_no_dockutil() -> None:
     assert result == 0
 
 
-def test_sync_dock_with_explicit_path() -> None:
+def test_sync_dock_with_explicit_path(tmp_path: Path) -> None:
     """Test sync_dock with explicit dockutil path."""
-    apps = [Path("/tmp/App1.app")]
+    apps = [tmp_path / "App1.app"]
 
     mock_result = MagicMock()
     mock_result.returncode = 0
@@ -32,9 +32,9 @@ def test_sync_dock_with_explicit_path() -> None:
     assert mock_run.call_args[0][0] == ["/usr/local/bin/dockutil", "-L"]
 
 
-def test_sync_dock_dockutil_fails() -> None:
+def test_sync_dock_dockutil_fails(tmp_path: Path) -> None:
     """Test sync_dock when dockutil command fails."""
-    apps = [Path("/tmp/App1.app")]
+    apps = [tmp_path / "App1.app"]
 
     mock_result = MagicMock()
     mock_result.returncode = 1
@@ -48,9 +48,9 @@ def test_sync_dock_dockutil_fails() -> None:
     assert result == 0
 
 
-def test_sync_dock_no_nix_items() -> None:
+def test_sync_dock_no_nix_items(tmp_path: Path) -> None:
     """Test sync_dock when no nix store items in dock."""
-    apps = [Path("/tmp/App1.app")]
+    apps = [tmp_path / "App1.app"]
 
     mock_result = MagicMock()
     mock_result.returncode = 0
@@ -78,28 +78,28 @@ def test_sync_dock_updates_matching_items(tmp_path: Path) -> None:
     mock_add_result = MagicMock()
     mock_add_result.returncode = 0
 
-    call_count = 0
+    calls: list[list[str]] = []
 
-    def mock_run(cmd: list[str], **kwargs: object) -> MagicMock:
-        nonlocal call_count
-        call_count += 1
+    def mock_run(cmd: list[str], **_kwargs: object) -> MagicMock:
+        calls.append(cmd)
         if "-L" in cmd:
             return mock_list_result
         return mock_add_result
 
     with (
         patch("shutil.which", return_value="/usr/bin/dockutil"),
-        patch("subprocess.run", side_effect=mock_run) as mock_subprocess,
+        patch("subprocess.run", side_effect=mock_run),
     ):
         result = sync_dock(apps)
 
     assert result == 1
-    assert call_count == 2  # List + Add
+    expected_calls = 1 + 1  # list + add
+    assert len(calls) == expected_calls
 
 
-def test_sync_dock_empty_line() -> None:
+def test_sync_dock_empty_line(tmp_path: Path) -> None:
     """Test sync_dock handles empty lines in dockutil output."""
-    apps = [Path("/tmp/App1.app")]
+    apps = [tmp_path / "App1.app"]
 
     mock_result = MagicMock()
     mock_result.returncode = 0

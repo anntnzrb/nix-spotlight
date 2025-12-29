@@ -8,28 +8,33 @@ import pytest
 
 from nix_spotlight.__main__ import main
 
+ARGPARSE_ERROR = 2
+
 
 def test_main_no_args() -> None:
     """Test main with no arguments exits with error."""
-    with patch.object(sys, "argv", ["nix-spotlight"]):
-        with pytest.raises(SystemExit) as exc_info:
-            main()
-    assert exc_info.value.code == 2  # argparse error
+    with patch.object(sys, "argv", ["nix-spotlight"]), pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == ARGPARSE_ERROR
 
 
 def test_main_help() -> None:
     """Test main --help exits cleanly."""
-    with patch.object(sys, "argv", ["nix-spotlight", "--help"]):
-        with pytest.raises(SystemExit) as exc_info:
-            main()
+    with (
+        patch.object(sys, "argv", ["nix-spotlight", "--help"]),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        main()
     assert exc_info.value.code == 0
 
 
 def test_main_version(capsys: pytest.CaptureFixture[str]) -> None:
     """Test main --version shows version."""
-    with patch.object(sys, "argv", ["nix-spotlight", "--version"]):
-        with pytest.raises(SystemExit) as exc_info:
-            main()
+    with (
+        patch.object(sys, "argv", ["nix-spotlight", "--version"]),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        main()
     assert exc_info.value.code == 0
     captured = capsys.readouterr()
     assert "0.1.0" in captured.out
@@ -37,9 +42,11 @@ def test_main_version(capsys: pytest.CaptureFixture[str]) -> None:
 
 def test_main_sync_help() -> None:
     """Test sync subcommand help."""
-    with patch.object(sys, "argv", ["nix-spotlight", "sync", "--help"]):
-        with pytest.raises(SystemExit) as exc_info:
-            main()
+    with (
+        patch.object(sys, "argv", ["nix-spotlight", "sync", "--help"]),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        main()
     assert exc_info.value.code == 0
 
 

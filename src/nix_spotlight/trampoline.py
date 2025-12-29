@@ -17,6 +17,7 @@ def create_trampoline(source: App, target_dir: Path) -> Path:
 
     Returns:
         Path to the created trampoline
+
     """
     trampoline = target_dir / source.name
     trampoline.mkdir(parents=True, exist_ok=True)
@@ -38,6 +39,7 @@ def gather_apps(from_dir: Path) -> list[App]:
 
     Returns:
         List of valid App instances
+
     """
     apps: list[App] = []
 
@@ -67,6 +69,7 @@ def sync_trampolines(from_dir: Path, to_dir: Path) -> list[Path]:
 
     Returns:
         List of created trampoline paths
+
     """
     # Clean slate
     shutil.rmtree(to_dir, ignore_errors=True)

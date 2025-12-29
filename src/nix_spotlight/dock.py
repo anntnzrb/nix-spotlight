@@ -17,6 +17,7 @@ def sync_dock(apps: list[Path], dockutil_path: str | None = None) -> int:
 
     Returns:
         Number of dock items updated
+
     """
     dockutil = dockutil_path or shutil.which("dockutil")
     if not dockutil:
