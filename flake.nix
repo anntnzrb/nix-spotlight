@@ -27,7 +27,7 @@
 
             build-system = [ py.setuptools ];
             nativeCheckInputs = [
-              py.mypy
+              pkgs.basedpyright
               py.pytest
               py.pytest-cov
               pkgs.ruff
@@ -36,7 +36,7 @@
             checkPhase = ''
               runHook preCheck
               ruff check src/
-              mypy src/ --strict
+              basedpyright src/
               pytest tests/ -v --cov=nix_spotlight --cov-report=term-missing --cov-fail-under=100
               runHook postCheck
             '';

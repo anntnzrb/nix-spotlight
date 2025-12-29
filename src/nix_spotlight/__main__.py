@@ -3,6 +3,7 @@
 import argparse
 import sys
 from pathlib import Path
+from typing import cast
 
 from . import __version__
 from .dock import sync_dock
@@ -15,7 +16,7 @@ def main() -> int:
         prog="nix-spotlight",
         description="macOS Spotlight integration for Nix apps",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
@@ -28,17 +29,17 @@ def main() -> int:
         "sync",
         help="Sync trampolines from source to target directory",
     )
-    sync_parser.add_argument(
+    _ = sync_parser.add_argument(
         "from_dir",
         type=Path,
         help="Source directory containing .app bundles",
     )
-    sync_parser.add_argument(
+    _ = sync_parser.add_argument(
         "to_dir",
         type=Path,
         help="Target directory for trampolines",
     )
-    sync_parser.add_argument(
+    _ = sync_parser.add_argument(
         "--no-dock",
         action="store_true",
         help="Skip dock syncing",
@@ -47,8 +48,9 @@ def main() -> int:
     args = parser.parse_args()
 
     # Only sync command exists, subparsers required=True ensures this
-    from_dir: Path = args.from_dir
-    to_dir: Path = args.to_dir
+    from_dir = cast("Path", args.from_dir)
+    to_dir = cast("Path", args.to_dir)
+    no_dock = cast("bool", args.no_dock)
 
     if not from_dir.exists():
         print(f"error: source directory does not exist: {from_dir}", file=sys.stderr)
@@ -56,8 +58,8 @@ def main() -> int:
 
     trampolines = sync_trampolines(from_dir, to_dir)
 
-    if not args.no_dock:
-        sync_dock(trampolines)
+    if not no_dock:
+        _ = sync_dock(trampolines)
 
     print(f"Synced {len(trampolines)} apps to {to_dir}")
 

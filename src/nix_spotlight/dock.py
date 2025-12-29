@@ -48,7 +48,7 @@ def sync_dock(apps: list[Path], dockutil_path: str | None = None) -> int:
         # Find matching trampoline
         if name in app_stems:
             trampoline = app_stems[name]
-            subprocess.run(
+            _ = subprocess.run(
                 [dockutil, "--add", str(trampoline.resolve()), "--replacing", name],
                 check=False,
             )

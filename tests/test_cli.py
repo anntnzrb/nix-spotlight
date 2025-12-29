@@ -2,19 +2,20 @@
 
 import sys
 from pathlib import Path
+from typing import Final
 from unittest.mock import patch
 
 import pytest
 
 from nix_spotlight.__main__ import main
 
-ARGPARSE_ERROR = 2
+ARGPARSE_ERROR: Final = 2
 
 
 def test_main_no_args() -> None:
     """Test main with no arguments exits with error."""
     with patch.object(sys, "argv", ["nix-spotlight"]), pytest.raises(SystemExit) as exc_info:
-        main()
+        _ = main()
     assert exc_info.value.code == ARGPARSE_ERROR
 
 
@@ -24,7 +25,7 @@ def test_main_help() -> None:
         patch.object(sys, "argv", ["nix-spotlight", "--help"]),
         pytest.raises(SystemExit) as exc_info,
     ):
-        main()
+        _ = main()
     assert exc_info.value.code == 0
 
 
@@ -34,7 +35,7 @@ def test_main_version(capsys: pytest.CaptureFixture[str]) -> None:
         patch.object(sys, "argv", ["nix-spotlight", "--version"]),
         pytest.raises(SystemExit) as exc_info,
     ):
-        main()
+        _ = main()
     assert exc_info.value.code == 0
     captured = capsys.readouterr()
     assert "0.1.0" in captured.out
@@ -46,7 +47,7 @@ def test_main_sync_help() -> None:
         patch.object(sys, "argv", ["nix-spotlight", "sync", "--help"]),
         pytest.raises(SystemExit) as exc_info,
     ):
-        main()
+        _ = main()
     assert exc_info.value.code == 0
 
 
