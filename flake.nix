@@ -52,17 +52,15 @@
         }
       );
 
-      homeManagerModules.default =
-        { ... }:
-        {
-          imports = [ "${self}/nix/modules/home-manager.nix" ];
-        };
+      homeManagerModules.default = {
+        _module.args.self = self;
+        imports = [ "${self}/nix/modules/home-manager.nix" ];
+      };
 
-      darwinModules.default =
-        { ... }:
-        {
-          imports = [ "${self}/nix/modules/darwin.nix" ];
-        };
+      darwinModules.default = {
+        _module.args.self = self;
+        imports = [ "${self}/nix/modules/darwin.nix" ];
+      };
 
       formatter = forSystems (
         system: import "${self}/nix/formatter.nix" { pkgs = nixpkgs.legacyPackages.${system}; }
