@@ -1,11 +1,10 @@
 {
-  description = "macOS Spotlight integration for Nix apps";
-
   inputs.nixpkgs.url = "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.xz";
 
   outputs =
     { self, nixpkgs }:
     let
+      pyproject = builtins.fromTOML (builtins.readFile "${self}/pyproject.toml");
       systems = [
         "aarch64-darwin"
         "x86_64-darwin"
@@ -21,8 +20,8 @@
         in
         {
           default = py.buildPythonApplication {
-            pname = "nix-spotlight";
-            version = "0.1.0";
+            pname = pyproject.project.name;
+            version = pyproject.project.version;
             pyproject = true;
             src = ./.;
 
@@ -43,10 +42,10 @@
             '';
 
             meta = {
-              description = "macOS Spotlight integration for Nix apps";
+              description = pyproject.project.description;
               homepage = "https://github.com/anntnzrb/nix-spotlight";
               license = pkgs.lib.licenses.agpl3Only;
-              mainProgram = "nix-spotlight";
+              mainProgram = pyproject.project.name;
               platforms = systems;
             };
           };
