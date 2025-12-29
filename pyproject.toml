@@ -25,7 +25,21 @@ target-version = "py313"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "TCH"]
+select = ["ALL"]
+ignore = [
+    "COM812",  # conflicts with ruff fmt
+    "D203",    # conflicts with ruff fmt
+    "D213",    # conflicts with ruff fmt
+    "S603",    # subprocess with trusted input (system tools, module paths)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/nix_spotlight/__main__.py" = [
+    "T201",  # CLI entry point uses print for user output
+]
+"tests/*" = [
+    "S101",  # pytest uses assert by design
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
