@@ -1,7 +1,7 @@
 {
   description = "macOS Spotlight integration for Nix apps";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.nixpkgs.url = "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.xz";
 
   outputs =
     { self, nixpkgs }:
