@@ -24,7 +24,6 @@ def main() -> int:
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # sync command
     sync_parser = subparsers.add_parser(
         "sync",
         help="Sync trampolines from source to target directory",
@@ -46,8 +45,6 @@ def main() -> int:
     )
 
     args = parser.parse_args()
-
-    # Only sync command exists, subparsers required=True ensures this
     from_dir = cast("Path", args.from_dir)
     to_dir = cast("Path", args.to_dir)
     no_dock = cast("bool", args.no_dock)

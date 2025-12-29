@@ -72,7 +72,6 @@ def test_create_trampoline_replaces_existing(tmp_path: Path) -> None:
     target_dir.mkdir()
     trampoline_dir = target_dir / "MyApp.app"
     trampoline_dir.mkdir()
-    # Create an old symlink
     old_link = trampoline_dir / "Contents"
     old_link.symlink_to("/nonexistent")
 
@@ -93,7 +92,6 @@ def test_create_trampoline_creates_parent_dirs(tmp_path: Path) -> None:
     (app_path / "Contents" / "Info.plist").touch()
 
     target_dir = tmp_path / "nested" / "target"
-    # Don't create target_dir - let create_trampoline do it
 
     app = App(app_path)
     trampoline = create_trampoline(app, target_dir)
@@ -106,13 +104,11 @@ def test_gather_apps(tmp_path: Path) -> None:
     """Test gathering apps from directory."""
     valid_app_names = ["App1.app", "App2.app"]
 
-    # Create valid app at root
     app1 = tmp_path / valid_app_names[0]
     app1.mkdir()
     (app1 / "Contents").mkdir()
     (app1 / "Contents" / "Info.plist").touch()
 
-    # Create nested app
     nested = tmp_path / "Nested"
     nested.mkdir()
     app2 = nested / valid_app_names[1]
@@ -120,7 +116,6 @@ def test_gather_apps(tmp_path: Path) -> None:
     (app2 / "Contents").mkdir()
     (app2 / "Contents" / "Info.plist").touch()
 
-    # Create invalid app (no Info.plist)
     invalid = tmp_path / "Invalid.app"
     invalid.mkdir()
 
@@ -139,7 +134,6 @@ def test_gather_apps_empty_dir(tmp_path: Path) -> None:
 
 def test_gather_apps_no_valid_apps(tmp_path: Path) -> None:
     """Test gathering apps when none are valid."""
-    # Create invalid apps only
     invalid1 = tmp_path / "Invalid1.app"
     invalid1.mkdir()
 
@@ -153,7 +147,6 @@ def test_gather_apps_no_valid_apps(tmp_path: Path) -> None:
 
 def test_gather_apps_nested_invalid(tmp_path: Path) -> None:
     """Test gathering apps skips invalid nested apps."""
-    # Create valid nested app
     nested = tmp_path / "Nested"
     nested.mkdir()
     valid_app = nested / "Valid.app"
@@ -161,10 +154,8 @@ def test_gather_apps_nested_invalid(tmp_path: Path) -> None:
     (valid_app / "Contents").mkdir()
     (valid_app / "Contents" / "Info.plist").touch()
 
-    # Create invalid nested app
     invalid_app = nested / "Invalid.app"
     invalid_app.mkdir()
-    # No Contents/Info.plist
 
     apps = gather_apps(tmp_path)
     assert len(apps) == 1
@@ -199,12 +190,10 @@ def test_sync_trampolines_cleans_existing(tmp_path: Path) -> None:
     target = tmp_path / "target"
     target.mkdir()
 
-    # Create old content that should be removed
     old_app = target / "OldApp.app"
     old_app.mkdir()
     (old_app / "garbage").touch()
 
-    # Create new app
     app = source / "NewApp.app"
     app.mkdir()
     (app / "Contents").mkdir()

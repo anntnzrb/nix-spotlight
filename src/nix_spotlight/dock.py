@@ -23,9 +23,8 @@ def sync_dock(apps: list[Path], dockutil_path: str | None = None) -> DockSyncRes
     """
     dockutil = dockutil_path or shutil.which("dockutil")
     if not dockutil:
-        return DockSyncResult()  # Silently skip if dockutil unavailable
+        return DockSyncResult()
 
-    # Get current dock items
     result = subprocess.run(
         [dockutil, "-L"],
         capture_output=True,
@@ -42,18 +41,12 @@ def sync_dock(apps: list[Path], dockutil_path: str | None = None) -> DockSyncRes
     errors: list[str] = []
 
     for line in result.stdout.splitlines():
-        # Skip empty lines
         if not line.strip():
             continue
-
-        # Skip non-nix items
         if "/nix/store" not in line:
             continue
 
-        # dockutil format: "AppName\t/path/to/app"
         name = line.split("\t")[0]
-
-        # Find matching trampoline
         if name not in app_stems:
             skipped += 1
             continue

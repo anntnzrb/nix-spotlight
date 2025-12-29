@@ -62,7 +62,6 @@ def sync_trampolines(from_dir: Path, to_dir: Path) -> list[Path]:
         List of created trampoline paths
 
     """
-    # Clean slate
     shutil.rmtree(to_dir, ignore_errors=True)
     to_dir.mkdir(parents=True)
 
@@ -73,7 +72,6 @@ def sync_trampolines(from_dir: Path, to_dir: Path) -> list[Path]:
         trampoline = create_trampoline(app, to_dir)
         trampolines.append(trampoline)
 
-    # Touch to trigger Spotlight reindex
     for trampoline in trampolines:
         trampoline.touch()
 

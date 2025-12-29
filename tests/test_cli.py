@@ -73,7 +73,6 @@ def test_main_sync_success(
     source.mkdir()
     target = tmp_path / "target"
 
-    # Create a valid app in source
     app_path = source / "Test.app"
     app_path.mkdir()
     (app_path / "Contents").mkdir()
@@ -112,7 +111,6 @@ def test_main_sync_with_dock(tmp_path: Path) -> None:
     source.mkdir()
     target = tmp_path / "target"
 
-    # Create a valid app
     app = source / "Test.app"
     app.mkdir()
     (app / "Contents").mkdir()
@@ -139,7 +137,6 @@ def test_main_sync_with_dock_errors(
     source.mkdir()
     target = tmp_path / "target"
 
-    # Create a valid app
     app = source / "Test.app"
     app.mkdir()
     (app / "Contents").mkdir()
@@ -170,7 +167,6 @@ def test_main_sync_with_dock_no_errors(
     source.mkdir()
     target = tmp_path / "target"
 
-    # Create a valid app
     app = source / "Test.app"
     app.mkdir()
     (app / "Contents").mkdir()
