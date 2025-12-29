@@ -126,3 +126,65 @@ def test_main_sync_with_dock(tmp_path: Path) -> None:
 
     assert result == 0
     mock_dock.assert_called_once()
+
+
+def test_main_sync_with_dock_errors(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Test sync prints dock errors as warnings."""
+    from nix_spotlight.types import DockSyncResult
+
+    source = tmp_path / "source"
+    source.mkdir()
+    target = tmp_path / "target"
+
+    # Create a valid app
+    app = source / "Test.app"
+    app.mkdir()
+    (app / "Contents").mkdir()
+    (app / "Contents" / "Info.plist").touch()
+
+    mock_result = DockSyncResult(errors=("error1", "error2"))
+
+    with (
+        patch.object(sys, "argv", ["nix-spotlight", "sync", str(source), str(target)]),
+        patch("nix_spotlight.__main__.sync_dock", return_value=mock_result),
+    ):
+        result = main()
+
+    assert result == 0
+    captured = capsys.readouterr()
+    assert "warning: error1" in captured.err
+    assert "warning: error2" in captured.err
+
+
+def test_main_sync_with_dock_no_errors(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Test sync with dock succeeds without warnings."""
+    from nix_spotlight.types import DockSyncResult
+
+    source = tmp_path / "source"
+    source.mkdir()
+    target = tmp_path / "target"
+
+    # Create a valid app
+    app = source / "Test.app"
+    app.mkdir()
+    (app / "Contents").mkdir()
+    (app / "Contents" / "Info.plist").touch()
+
+    mock_result = DockSyncResult(updated=1, errors=())
+
+    with (
+        patch.object(sys, "argv", ["nix-spotlight", "sync", str(source), str(target)]),
+        patch("nix_spotlight.__main__.sync_dock", return_value=mock_result),
+    ):
+        result = main()
+
+    assert result == 0
+    captured = capsys.readouterr()
+    assert "warning" not in captured.err
+    assert "Synced 1 apps" in captured.out

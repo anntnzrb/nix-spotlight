@@ -51,11 +51,7 @@ def sync_dock(apps: list[Path], dockutil_path: str | None = None) -> DockSyncRes
             continue
 
         # dockutil format: "AppName\t/path/to/app"
-        parts = line.split("\t")
-        if len(parts) < 1:
-            continue
-
-        name = parts[0]
+        name = line.split("\t")[0]
 
         # Find matching trampoline
         if name not in app_stems:
