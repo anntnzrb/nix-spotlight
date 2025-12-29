@@ -64,6 +64,8 @@
           imports = [ "${self}/nix/modules/darwin.nix" ];
         };
 
-      formatter = forSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
+      formatter = forSystems (
+        system: import "${self}/nix/formatter.nix" { pkgs = nixpkgs.legacyPackages.${system}; }
+      );
     };
 }
