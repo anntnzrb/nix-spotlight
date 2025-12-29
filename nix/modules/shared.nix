@@ -22,7 +22,11 @@
     };
 
   mkSyncCommand =
-    { pkgs, self, cfg }:
+    {
+      pkgs,
+      self,
+      cfg,
+    }:
     ''
       ${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/nix-spotlight sync \
         ${lib.optionalString (!cfg.syncDock) "--no-dock"} \

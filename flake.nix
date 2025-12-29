@@ -53,8 +53,18 @@
         }
       );
 
-      homeManagerModules.default = { ... }: { imports = [ "${self}/nix/modules/home-manager.nix" ]; };
+      homeManagerModules.default =
+        { ... }:
+        {
+          imports = [ "${self}/nix/modules/home-manager.nix" ];
+        };
 
-      darwinModules.default = { ... }: { imports = [ "${self}/nix/modules/darwin.nix" ]; };
+      darwinModules.default =
+        { ... }:
+        {
+          imports = [ "${self}/nix/modules/darwin.nix" ];
+        };
+
+      formatter = forSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
     };
 }
