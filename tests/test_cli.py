@@ -64,17 +64,20 @@ def test_main_sync_missing_source(tmp_path: Path, capsys: pytest.CaptureFixture[
     assert "does not exist" in captured.err
 
 
-def test_main_sync_success(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_main_sync_success(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     """Test successful sync operation."""
     source = tmp_path / "source"
     source.mkdir()
     target = tmp_path / "target"
 
-    # Create a valid app
-    app = source / "Test.app"
-    app.mkdir()
-    (app / "Contents").mkdir()
-    (app / "Contents" / "Info.plist").touch()
+    # Create a valid app in source
+    app_path = source / "Test.app"
+    app_path.mkdir()
+    (app_path / "Contents").mkdir()
+    (app_path / "Contents" / "Info.plist").touch()
 
     with patch.object(
         sys, "argv", ["nix-spotlight", "sync", "--no-dock", str(source), str(target)]

@@ -59,7 +59,10 @@ def main() -> int:
     trampolines = sync_trampolines(from_dir, to_dir)
 
     if not no_dock:
-        _ = sync_dock(trampolines)
+        dock_result = sync_dock(trampolines)
+        if dock_result.errors:
+            for error in dock_result.errors:
+                print(f"warning: {error}", file=sys.stderr)
 
     print(f"Synced {len(trampolines)} apps to {to_dir}")
 

@@ -1,9 +1,13 @@
 """Trampoline creation using symlink-based approach."""
 
 import shutil
+from itertools import chain
 from pathlib import Path
 
 from .types import App
+
+# Glob patterns for finding .app bundles (direct and one level nested)
+_APP_PATTERNS = ("*.app", "*/*.app")
 
 
 def create_trampoline(source: App, target_dir: Path) -> Path:
@@ -41,21 +45,8 @@ def gather_apps(from_dir: Path) -> list[App]:
         List of valid App instances
 
     """
-    apps: list[App] = []
-
-    # Direct .app bundles
-    for path in from_dir.glob("*.app"):
-        app = App(path)
-        if app.is_valid:
-            apps.append(app)
-
-    # Nested one level (e.g., KDE/Dolphin.app)
-    for path in from_dir.glob("*/*.app"):
-        app = App(path)
-        if app.is_valid:
-            apps.append(app)
-
-    return apps
+    paths = chain.from_iterable(from_dir.glob(p) for p in _APP_PATTERNS)
+    return [app for path in paths if (app := App(path)).is_valid]
 
 
 def sync_trampolines(from_dir: Path, to_dir: Path) -> list[Path]:

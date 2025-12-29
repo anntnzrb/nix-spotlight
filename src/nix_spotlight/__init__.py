@@ -1,9 +1,18 @@
 """nix-spotlight - macOS Spotlight integration for Nix apps."""
 
-__version__ = "0.1.0"
+from importlib.metadata import version
 
 from .dock import sync_dock
 from .trampoline import create_trampoline, sync_trampolines
-from .types import App
+from .types import App, DockSyncResult
 
-__all__ = ["App", "__version__", "create_trampoline", "sync_dock", "sync_trampolines"]
+__version__ = version("nix-spotlight")
+
+__all__ = [
+    "App",
+    "DockSyncResult",
+    "__version__",
+    "create_trampoline",
+    "sync_dock",
+    "sync_trampolines",
+]

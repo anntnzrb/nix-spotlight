@@ -1,18 +1,15 @@
 """Tests for trampoline module."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 from nix_spotlight.trampoline import create_trampoline, gather_apps, sync_trampolines
 from nix_spotlight.types import App
 
 
-def test_app_properties(tmp_path: Path) -> None:
+def test_app_properties(make_app: Callable[[str], Path]) -> None:
     """Test App dataclass properties."""
-    app_path = tmp_path / "Test.app"
-    app_path.mkdir()
-    (app_path / "Contents").mkdir()
-    (app_path / "Contents" / "Info.plist").touch()
-
+    app_path = make_app("Test.app")
     app = App(app_path)
 
     assert app.name == "Test.app"
@@ -44,6 +41,7 @@ def test_create_trampoline(tmp_path: Path) -> None:
     """Test trampoline creation."""
     source_dir = tmp_path / "source"
     source_dir.mkdir()
+
     app_path = source_dir / "MyApp.app"
     app_path.mkdir()
     (app_path / "Contents").mkdir()
@@ -108,7 +106,7 @@ def test_gather_apps(tmp_path: Path) -> None:
     """Test gathering apps from directory."""
     valid_app_names = ["App1.app", "App2.app"]
 
-    # Create valid app
+    # Create valid app at root
     app1 = tmp_path / valid_app_names[0]
     app1.mkdir()
     (app1 / "Contents").mkdir()

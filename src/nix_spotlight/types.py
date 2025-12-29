@@ -1,6 +1,6 @@
 """Type definitions for nix-spotlight."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -29,3 +29,12 @@ class App:
     def is_valid(self) -> bool:
         """Check if this is a valid .app bundle."""
         return self.info_plist.exists()
+
+
+@dataclass(frozen=True, slots=True)
+class DockSyncResult:
+    """Result of a dock sync operation."""
+
+    updated: int = 0
+    skipped: int = 0
+    errors: tuple[str, ...] = field(default_factory=tuple)
