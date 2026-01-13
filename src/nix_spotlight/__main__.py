@@ -49,11 +49,11 @@ def main() -> int:
     to_dir = cast("Path", args.to_dir)
     no_dock = cast("bool", args.no_dock)
 
-    if not from_dir.exists():
-        print(f"error: source directory does not exist: {from_dir}", file=sys.stderr)
+    try:
+        trampolines = sync_trampolines(from_dir, to_dir)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return 1
-
-    trampolines = sync_trampolines(from_dir, to_dir)
 
     if not no_dock:
         dock_result = sync_dock(trampolines)

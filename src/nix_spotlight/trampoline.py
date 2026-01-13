@@ -27,7 +27,13 @@ def create_trampoline(source: App, target_dir: Path) -> Path:
     trampoline.mkdir(parents=True, exist_ok=True)
 
     contents_link = trampoline / "Contents"
-    contents_link.unlink(missing_ok=True)
+    if contents_link.is_symlink():
+        contents_link.unlink()
+    elif contents_link.exists():
+        if contents_link.is_dir():
+            shutil.rmtree(contents_link)
+        else:
+            contents_link.unlink()
     contents_link.symlink_to(source.contents)
 
     return trampoline
@@ -62,6 +68,19 @@ def sync_trampolines(from_dir: Path, to_dir: Path) -> list[Path]:
         List of created trampoline paths
 
     """
+    if not from_dir.exists():
+        msg = f"source directory does not exist: {from_dir}"
+        raise ValueError(msg)
+    if not from_dir.is_dir():
+        msg = f"source path is not a directory: {from_dir}"
+        raise ValueError(msg)
+    if to_dir.exists() and not to_dir.is_dir():
+        msg = f"target path is not a directory: {to_dir}"
+        raise ValueError(msg)
+    if from_dir.resolve() == to_dir.resolve():
+        msg = f"source and target directories must differ: {from_dir}"
+        raise ValueError(msg)
+
     shutil.rmtree(to_dir, ignore_errors=True)
     to_dir.mkdir(parents=True)
 

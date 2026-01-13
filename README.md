@@ -55,6 +55,10 @@ Unlike AppleScript-based solutions, nix-spotlight uses symlinks which properly h
 
 ## CLI Usage
 
+The CLI is primarily invoked by the Nix modules. Manual runs are supported; it
+only refuses unsafe path configurations (missing source, non-directory source,
+target is a file, or source/target are identical).
+
 ```bash
 # Sync apps from source to trampolines directory
 nix-spotlight sync /path/to/apps /path/to/trampolines

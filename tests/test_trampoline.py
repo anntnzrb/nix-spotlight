@@ -3,6 +3,8 @@
 from collections.abc import Callable
 from pathlib import Path
 
+import pytest
+
 from nix_spotlight.trampoline import create_trampoline, gather_apps, sync_trampolines
 from nix_spotlight.types import App
 
@@ -74,6 +76,50 @@ def test_create_trampoline_replaces_existing(tmp_path: Path) -> None:
     trampoline_dir.mkdir()
     old_link = trampoline_dir / "Contents"
     old_link.symlink_to("/nonexistent")
+
+    app = App(app_path)
+    trampoline = create_trampoline(app, target_dir)
+
+    assert (trampoline / "Contents").is_symlink()
+    assert (trampoline / "Contents").resolve() == app_path / "Contents"
+
+
+def test_create_trampoline_replaces_existing_dir(tmp_path: Path) -> None:
+    """Test trampoline creation replaces existing Contents directory."""
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    app_path = source_dir / "MyApp.app"
+    app_path.mkdir()
+    (app_path / "Contents").mkdir()
+    (app_path / "Contents" / "Info.plist").touch()
+
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    trampoline_dir = target_dir / "MyApp.app"
+    (trampoline_dir / "Contents").mkdir(parents=True)
+    (trampoline_dir / "Contents" / "old").touch()
+
+    app = App(app_path)
+    trampoline = create_trampoline(app, target_dir)
+
+    assert (trampoline / "Contents").is_symlink()
+    assert (trampoline / "Contents").resolve() == app_path / "Contents"
+
+
+def test_create_trampoline_replaces_existing_file(tmp_path: Path) -> None:
+    """Test trampoline creation replaces existing Contents file."""
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    app_path = source_dir / "MyApp.app"
+    app_path.mkdir()
+    (app_path / "Contents").mkdir()
+    (app_path / "Contents" / "Info.plist").touch()
+
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    trampoline_dir = target_dir / "MyApp.app"
+    trampoline_dir.mkdir()
+    (trampoline_dir / "Contents").touch()
 
     app = App(app_path)
     trampoline = create_trampoline(app, target_dir)
@@ -216,3 +262,42 @@ def test_sync_trampolines_empty_source(tmp_path: Path) -> None:
 
     assert trampolines == []
     assert target.exists()
+
+
+def test_sync_trampolines_missing_source(tmp_path: Path) -> None:
+    """Test sync rejects missing source directory."""
+    source = tmp_path / "missing"
+    target = tmp_path / "target"
+
+    with pytest.raises(ValueError, match="source directory does not exist"):
+        _ = sync_trampolines(source, target)
+
+
+def test_sync_trampolines_source_not_dir(tmp_path: Path) -> None:
+    """Test sync rejects non-directory source path."""
+    source = tmp_path / "source"
+    source.touch()
+    target = tmp_path / "target"
+
+    with pytest.raises(ValueError, match="source path is not a directory"):
+        _ = sync_trampolines(source, target)
+
+
+def test_sync_trampolines_target_not_dir(tmp_path: Path) -> None:
+    """Test sync rejects non-directory target path."""
+    source = tmp_path / "source"
+    source.mkdir()
+    target = tmp_path / "target"
+    target.touch()
+
+    with pytest.raises(ValueError, match="target path is not a directory"):
+        _ = sync_trampolines(source, target)
+
+
+def test_sync_trampolines_source_target_same(tmp_path: Path) -> None:
+    """Test sync rejects identical source/target directories."""
+    source = tmp_path / "source"
+    source.mkdir()
+
+    with pytest.raises(ValueError, match="source and target directories must differ"):
+        _ = sync_trampolines(source, source)

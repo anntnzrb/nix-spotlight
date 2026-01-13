@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from nix_spotlight.__main__ import main
+from nix_spotlight.types import DockSyncResult
 
 ARGPARSE_ERROR: Final = 2
 
@@ -131,8 +132,6 @@ def test_main_sync_with_dock_errors(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Test sync prints dock errors as warnings."""
-    from nix_spotlight.types import DockSyncResult
-
     source = tmp_path / "source"
     source.mkdir()
     target = tmp_path / "target"
@@ -161,8 +160,6 @@ def test_main_sync_with_dock_no_errors(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Test sync with dock succeeds without warnings."""
-    from nix_spotlight.types import DockSyncResult
-
     source = tmp_path / "source"
     source.mkdir()
     target = tmp_path / "target"

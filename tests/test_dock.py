@@ -106,6 +106,41 @@ def test_sync_dock_updates_matching_items(tmp_path: Path) -> None:
     assert len(calls) == expected_calls
 
 
+def test_sync_dock_updates_matching_items_by_path(tmp_path: Path) -> None:
+    """Test sync_dock matches by path stem when names differ."""
+    app1 = tmp_path / "MyApp.app"
+    app1.mkdir()
+    apps = [app1]
+
+    mock_list_result = MagicMock()
+    mock_list_result.returncode = 0
+    mock_list_result.stdout = "Different Name\t/nix/store/abc123/Applications/MyApp.app"
+
+    mock_add_result = MagicMock()
+    mock_add_result.returncode = 0
+    mock_add_result.stderr = ""
+
+    calls: list[list[str]] = []
+
+    def mock_run(cmd: list[str], **_kwargs: object) -> MagicMock:
+        calls.append(cmd)
+        if "-L" in cmd:
+            return mock_list_result
+        return mock_add_result
+
+    with (
+        patch("shutil.which", return_value="/usr/bin/dockutil"),
+        patch("subprocess.run", side_effect=mock_run),
+    ):
+        result = sync_dock(apps)
+
+    assert result.updated == 1
+    assert result.skipped == 0
+    assert result.errors == ()
+    expected_calls = 1 + 1
+    assert len(calls) == expected_calls
+
+
 def test_sync_dock_skips_unmatched_nix_items(tmp_path: Path) -> None:
     """Test sync_dock skips nix items without matching trampoline."""
     app1 = tmp_path / "OtherApp.app"

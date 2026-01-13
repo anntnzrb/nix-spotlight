@@ -46,12 +46,16 @@ def sync_dock(apps: list[Path], dockutil_path: str | None = None) -> DockSyncRes
         if "/nix/store" not in line:
             continue
 
-        name = line.split("\t")[0]
-        if name not in app_stems:
+        parts = line.split("\t", maxsplit=1)
+        name = parts[0].strip()
+        path = parts[1].strip() if len(parts) > 1 else ""
+        path_stem = Path(path).stem if path else ""
+
+        trampoline = app_stems.get(name) or app_stems.get(path_stem)
+        if not trampoline:
             skipped += 1
             continue
 
-        trampoline = app_stems[name]
         add_result = subprocess.run(
             [dockutil, "--add", str(trampoline.resolve()), "--replacing", name],
             capture_output=True,
