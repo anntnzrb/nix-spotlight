@@ -7,6 +7,23 @@ from pathlib import Path
 from .types import DockSyncResult
 
 
+def _iter_nix_dock_items(output: str) -> list[tuple[str, str]]:
+    """Extract dock item name/path pairs that reference /nix/store."""
+    items: list[tuple[str, str]] = []
+    for line in output.splitlines():
+        if not line.strip():
+            continue
+        if "/nix/store" not in line:
+            continue
+
+        parts = line.split("\t", maxsplit=1)
+        name = parts[0].strip()
+        path = parts[1].strip() if len(parts) > 1 else ""
+        items.append((name, path))
+
+    return items
+
+
 def sync_dock(apps: list[Path], dockutil_path: str | None = None) -> DockSyncResult:
     """Update dock persistent items pointing to /nix/store.
 
@@ -40,15 +57,7 @@ def sync_dock(apps: list[Path], dockutil_path: str | None = None) -> DockSyncRes
     skipped = 0
     errors: list[str] = []
 
-    for line in result.stdout.splitlines():
-        if not line.strip():
-            continue
-        if "/nix/store" not in line:
-            continue
-
-        parts = line.split("\t", maxsplit=1)
-        name = parts[0].strip()
-        path = parts[1].strip() if len(parts) > 1 else ""
+    for name, path in _iter_nix_dock_items(result.stdout):
         path_stem = Path(path).stem if path else ""
 
         trampoline = app_stems.get(name) or app_stems.get(path_stem)

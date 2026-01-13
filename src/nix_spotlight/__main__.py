@@ -2,16 +2,40 @@
 
 import argparse
 import sys
+from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
 
 from . import __version__
 from .dock import sync_dock
 from .trampoline import sync_trampolines
 
 
-def main() -> int:
-    """Run the nix-spotlight CLI."""
+@dataclass(frozen=True)
+class SyncArgs:
+    """Parsed arguments for the sync command."""
+
+    from_dir: Path
+    to_dir: Path
+    no_dock: bool
+
+
+class _SyncNamespace(argparse.Namespace):
+    from_dir: Path
+    to_dir: Path
+    no_dock: bool
+    command: str
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.from_dir = Path()
+        self.to_dir = Path()
+        self.no_dock = False
+        self.command = "sync"
+
+
+def parse_args(argv: Sequence[str] | None = None) -> SyncArgs:
+    """Parse CLI arguments."""
     parser = argparse.ArgumentParser(
         prog="nix-spotlight",
         description="macOS Spotlight integration for Nix apps",
@@ -44,24 +68,32 @@ def main() -> int:
         help="Skip dock syncing",
     )
 
-    args = parser.parse_args()
-    from_dir = cast("Path", args.from_dir)
-    to_dir = cast("Path", args.to_dir)
-    no_dock = cast("bool", args.no_dock)
+    namespace = _SyncNamespace()
+    _ = parser.parse_args(argv, namespace=namespace)
+    return SyncArgs(
+        from_dir=namespace.from_dir,
+        to_dir=namespace.to_dir,
+        no_dock=namespace.no_dock,
+    )
+
+
+def main() -> int:
+    """Run the nix-spotlight CLI."""
+    args = parse_args()
 
     try:
-        trampolines = sync_trampolines(from_dir, to_dir)
+        trampolines = sync_trampolines(args.from_dir, args.to_dir)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    if not no_dock:
+    if not args.no_dock:
         dock_result = sync_dock(trampolines)
         if dock_result.errors:
             for error in dock_result.errors:
                 print(f"warning: {error}", file=sys.stderr)
 
-    print(f"Synced {len(trampolines)} apps to {to_dir}")
+    print(f"Synced {len(trampolines)} apps to {args.to_dir}")
 
     return 0
 
