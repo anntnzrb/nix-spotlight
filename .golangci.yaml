@@ -9,7 +9,6 @@ linters:
     - gocritic
     - godot
     - godox
-    - gofumpt
     - gosec
     - ireturn
     - misspell
@@ -49,6 +48,11 @@ linters:
       - path: 'cmd/'
         linters:
           - forbidigo
+      - path: '_test\.go$'
+        linters:
+          - gosec
+          - thelper
+          - unparam
 
 formatters:
   enable:

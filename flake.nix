@@ -15,6 +15,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in {
         python = import "${self}/nix/package.nix" { inherit pkgs self systems; };
+        go = import "${self}/nix/go-package.nix" { inherit pkgs self systems; };
         default = self.packages.${system}.python;
       });
 

@@ -1,0 +1,256 @@
+package main
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestRun(t *testing.T) {
+	tests := []struct {
+		name       string
+		args       func(t *testing.T) []string
+		wantCode   int
+		wantStdout []string
+		wantStderr []string
+		verify     func(t *testing.T, args []string)
+	}{
+		{
+			name:       "no args",
+			args:       func(_ *testing.T) []string { return nil },
+			wantCode:   2,
+			wantStderr: []string{"usage: nix-spotlight sync <from> <to> [--no-dock]"},
+		},
+		{
+			name:       "help",
+			args:       func(_ *testing.T) []string { return []string{"--help"} },
+			wantCode:   0,
+			wantStdout: []string{"usage: nix-spotlight sync <from> <to> [--no-dock]"},
+		},
+		{
+			name:       "version",
+			args:       func(_ *testing.T) []string { return []string{"--version"} },
+			wantCode:   0,
+			wantStdout: []string{"nix-spotlight", "0.1.0"},
+		},
+		{
+			name:       "sync help",
+			args:       func(_ *testing.T) []string { return []string{"sync", "-h"} },
+			wantCode:   0,
+			wantStderr: []string{"usage: nix-spotlight sync <from> <to> [--no-dock]"},
+		},
+		{
+			name: "sync missing source",
+			args: func(t *testing.T) []string {
+				dir := t.TempDir()
+				return []string{"sync", filepath.Join(dir, "missing"), filepath.Join(dir, "target")}
+			},
+			wantCode:   1,
+			wantStderr: []string{"error:", "does not exist"},
+		},
+		{
+			name: "sync success",
+			args: func(t *testing.T) []string {
+				dir := t.TempDir()
+				source := filepath.Join(dir, "source")
+				target := filepath.Join(dir, "target")
+				mkdir(t, source)
+				makeApp(t, source, "Test.app")
+				return []string{"sync", "--no-dock", source, target}
+			},
+			wantCode:   0,
+			wantStdout: []string{"Synced 1 apps to"},
+			verify: func(t *testing.T, args []string) {
+				assertTrampoline(t, args[3], "Test.app")
+			},
+		},
+		{
+			name: "sync empty source",
+			args: func(t *testing.T) []string {
+				dir := t.TempDir()
+				source := filepath.Join(dir, "source")
+				target := filepath.Join(dir, "target")
+				mkdir(t, source)
+				return []string{"sync", "--no-dock", source, target}
+			},
+			wantCode:   0,
+			wantStdout: []string{"Synced 0 apps"},
+		},
+		{
+			name: "trailing no dock flag",
+			args: func(t *testing.T) []string {
+				dir := t.TempDir()
+				source := filepath.Join(dir, "source")
+				target := filepath.Join(dir, "target")
+				mkdir(t, source)
+				makeApp(t, source, "Tail.app")
+				return []string{"sync", source, target, "--no-dock"}
+			},
+			wantCode:   0,
+			wantStdout: []string{"Synced 1 apps"},
+			verify: func(t *testing.T, args []string) {
+				assertTrampoline(t, args[2], "Tail.app")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := tt.args(t)
+			code, stdout, stderr := captureRun(t, args)
+			if code != tt.wantCode {
+				t.Errorf("run() code = %d; want %d", code, tt.wantCode)
+			}
+			for _, want := range tt.wantStdout {
+				if !strings.Contains(stdout, want) {
+					t.Errorf("stdout = %q; want to contain %q", stdout, want)
+				}
+			}
+			for _, want := range tt.wantStderr {
+				if !strings.Contains(stderr, want) {
+					t.Errorf("stderr = %q; want to contain %q", stderr, want)
+				}
+			}
+			if tt.verify != nil {
+				tt.verify(t, args)
+			}
+		})
+	}
+}
+
+func TestRunNoDockSkipsDockutil(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	target := filepath.Join(dir, "target")
+	marker := filepath.Join(dir, "dockutil-called")
+	mkdir(t, source)
+	makeApp(t, source, "NoDock.app")
+	installDockutil(t, dir, "#!/bin/sh\n: > \"$DOCKUTIL_MARKER\"\nexit 0\n")
+	t.Setenv("DOCKUTIL_MARKER", marker)
+
+	code, stdout, stderr := captureRun(t, []string{"sync", source, target, "--no-dock"})
+	if code != 0 {
+		t.Fatalf("run() code = %d; want 0; stdout = %q stderr = %q", code, stdout, stderr)
+	}
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("dockutil was called with --no-dock set")
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("os.Stat(marker): %v", err)
+	}
+}
+
+func TestRunPrintsDockWarnings(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	target := filepath.Join(dir, "target")
+	mkdir(t, source)
+	makeApp(t, source, "Test.app")
+	installDockutil(t, dir, "#!/bin/sh\nif [ \"$1\" = \"-L\" ]; then\n\tprintf 'Test\\t/nix/store/old/Test.app\\n'\n\texit 0\nfi\nif [ \"$1\" = \"--add\" ]; then\n\tprintf 'replace failed' >&2\n\texit 1\nfi\nexit 0\n")
+
+	code, stdout, stderr := captureRun(t, []string{"sync", source, target})
+	if code != 0 {
+		t.Fatalf("run() code = %d; want 0; stdout = %q stderr = %q", code, stdout, stderr)
+	}
+	if !strings.Contains(stderr, "warning: Failed to update Test: replace failed") {
+		t.Errorf("stderr = %q; want dock warning", stderr)
+	}
+}
+
+func captureRun(t *testing.T, args []string) (int, string, string) {
+	t.Helper()
+
+	oldStdout, oldStderr := os.Stdout, os.Stderr
+	stdoutReader, stdoutWriter, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe(stdout): %v", err)
+	}
+	stderrReader, stderrWriter, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe(stderr): %v", err)
+	}
+
+	os.Stdout = stdoutWriter
+	os.Stderr = stderrWriter
+	code := run(args)
+	os.Stdout = oldStdout
+	os.Stderr = oldStderr
+
+	if err := stdoutWriter.Close(); err != nil {
+		t.Fatalf("close stdout writer: %v", err)
+	}
+	if err := stderrWriter.Close(); err != nil {
+		t.Fatalf("close stderr writer: %v", err)
+	}
+	stdout := readPipe(t, stdoutReader)
+	stderr := readPipe(t, stderrReader)
+	if err := stdoutReader.Close(); err != nil {
+		t.Fatalf("close stdout reader: %v", err)
+	}
+	if err := stderrReader.Close(); err != nil {
+		t.Fatalf("close stderr reader: %v", err)
+	}
+
+	return code, stdout, stderr
+}
+
+func readPipe(t *testing.T, file *os.File) string {
+	t.Helper()
+
+	var builder strings.Builder
+	buf := make([]byte, 1024)
+	for {
+		n, err := file.Read(buf)
+		if n > 0 {
+			builder.Write(buf[:n])
+		}
+		if err != nil {
+			break
+		}
+	}
+	return builder.String()
+}
+
+func mkdir(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		t.Fatalf("os.MkdirAll(%q): %v", path, err)
+	}
+}
+
+//nolint:unparam
+func makeApp(t *testing.T, source, name string) string {
+	t.Helper()
+	app := filepath.Join(source, name)
+	contents := filepath.Join(app, "Contents")
+	mkdir(t, contents)
+	if err := os.WriteFile(filepath.Join(contents, "Info.plist"), nil, 0o644); err != nil {
+		t.Fatalf("os.WriteFile(Info.plist): %v", err)
+	}
+	return app
+}
+
+func assertTrampoline(t *testing.T, target, name string) {
+	t.Helper()
+
+	info, err := os.Lstat(filepath.Join(target, name, "Contents"))
+	if err != nil {
+		t.Fatalf("os.Lstat(trampoline Contents): %v", err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("%s Contents mode = %v; want symlink", name, info.Mode())
+	}
+}
+
+func installDockutil(t *testing.T, dir, script string) {
+	t.Helper()
+
+	bin := filepath.Join(dir, "bin")
+	mkdir(t, bin)
+	path := filepath.Join(bin, "dockutil")
+	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
+		t.Fatalf("os.WriteFile(dockutil): %v", err)
+	}
+	oldPath := os.Getenv("PATH")
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+oldPath)
+}
