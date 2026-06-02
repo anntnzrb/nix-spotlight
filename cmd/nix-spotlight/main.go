@@ -8,18 +8,16 @@ import (
 	nixspotlight "github.com/anntnzrb/nix-spotlight"
 )
 
-var version = "0.1.0"
+var version = "dev"
 
 func main() {
 	os.Exit(run(os.Args[1:]))
 }
 
 func run(args []string) int {
-	for _, arg := range args {
-		if arg == "--version" {
-			fmt.Printf("nix-spotlight %s\n", version)
-			return 0
-		}
+	if len(args) == 1 && args[0] == "--version" {
+		fmt.Printf("nix-spotlight %s\n", version)
+		return 0
 	}
 
 	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
@@ -75,25 +73,14 @@ func printUsage(out *os.File) {
 }
 
 func syncFlagArgs(args []string) []string {
-	for _, arg := range args {
-		if arg == "--no-dock" || arg == "-no-dock" {
-			return syncFlagArgsWithDockFlagFirst(args)
-		}
-	}
-	return args
-}
-
-func syncFlagArgsWithDockFlagFirst(args []string) []string {
 	normalized := make([]string, 0, len(args))
+	positionals := make([]string, 0, len(args))
 	for _, arg := range args {
-		if arg == "--no-dock" || arg == "-no-dock" {
+		if arg == "--no-dock" {
 			normalized = append(normalized, arg)
+		} else {
+			positionals = append(positionals, arg)
 		}
 	}
-	for _, arg := range args {
-		if arg != "--no-dock" && arg != "-no-dock" {
-			normalized = append(normalized, arg)
-		}
-	}
-	return normalized
+	return append(normalized, positionals...)
 }

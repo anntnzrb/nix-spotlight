@@ -4,24 +4,39 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
-var appPatterns = [...]string{"*.app", "*/*.app"}
-
 // GatherApps gathers all valid .app bundles from a directory.
 func GatherApps(fromDir string) ([]App, error) {
+	entries, err := os.ReadDir(fromDir)
+	if err != nil {
+		return []App{}, nil //nolint:nilerr // silent empty on unreadable directory
+	}
+
 	apps := make([]App, 0)
 
-	for _, pattern := range appPatterns {
-		matches, err := filepath.Glob(filepath.Join(fromDir, pattern))
-		if err != nil {
-			return apps, err
-		}
-		for _, match := range matches {
-			app := NewApp(match)
+	for _, entry := range entries {
+		name := entry.Name()
+		if strings.HasSuffix(name, ".app") {
+			app := NewApp(filepath.Join(fromDir, name))
 			if app.IsValid() {
 				apps = append(apps, app)
+			}
+		}
+		if entry.IsDir() && !strings.HasSuffix(name, ".app") {
+			nestedEntries, err := os.ReadDir(filepath.Join(fromDir, name))
+			if err != nil {
+				continue
+			}
+			for _, nested := range nestedEntries {
+				if strings.HasSuffix(nested.Name(), ".app") {
+					app := NewApp(filepath.Join(fromDir, name, nested.Name()))
+					if app.IsValid() {
+						apps = append(apps, app)
+					}
+				}
 			}
 		}
 	}
@@ -84,9 +99,14 @@ func SyncTrampolines(fromDir, toDir string) ([]string, error) {
 		return nil, fmt.Errorf("source path is not a directory: %s", fromDir)
 	}
 
-	toInfo, err := os.Stat(toDir)
-	if err == nil && !toInfo.IsDir() {
-		return nil, fmt.Errorf("target path is not a directory: %s", toDir)
+	toInfo, err := os.Lstat(toDir)
+	if err == nil {
+		if toInfo.Mode()&os.ModeSymlink != 0 {
+			return nil, fmt.Errorf("target path must not be a symlink: %s", toDir)
+		}
+		if !toInfo.IsDir() {
+			return nil, fmt.Errorf("target path is not a directory: %s", toDir)
+		}
 	}
 	if err != nil && !os.IsNotExist(err) {
 		return nil, err
@@ -102,6 +122,17 @@ func SyncTrampolines(fromDir, toDir string) ([]string, error) {
 	}
 	if resolvedFrom == resolvedTo {
 		return nil, fmt.Errorf("source and target directories must differ: %s", fromDir)
+	}
+
+	resolvedToDir, err := filepath.EvalSymlinks(toDir)
+	if err == nil {
+		resolvedFromDir, err2 := filepath.EvalSymlinks(fromDir)
+		if err2 == nil {
+			rel, err3 := filepath.Rel(resolvedToDir, resolvedFromDir)
+			if err3 == nil && !strings.HasPrefix(rel, "..") && rel != "." {
+				return nil, fmt.Errorf("target path must not contain source: %s", toDir)
+			}
+		}
 	}
 
 	if err := os.RemoveAll(toDir); err != nil {

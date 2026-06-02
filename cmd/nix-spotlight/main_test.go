@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,13 +34,28 @@ func TestRun(t *testing.T) {
 			name:       "version",
 			args:       func(_ *testing.T) []string { return []string{"--version"} },
 			wantCode:   0,
-			wantStdout: []string{"nix-spotlight", "0.1.0"},
+			wantStdout: []string{"nix-spotlight", "dev"},
 		},
 		{
 			name:       "sync help",
 			args:       func(_ *testing.T) []string { return []string{"sync", "-h"} },
 			wantCode:   0,
 			wantStderr: []string{"usage: nix-spotlight sync <from> <to> [--no-dock]"},
+		},
+		{
+			name:       "sync long help",
+			args:       func(_ *testing.T) []string { return []string{"sync", "--help"} },
+			wantCode:   0,
+			wantStderr: []string{"usage: nix-spotlight sync <from> <to> [--no-dock]"},
+		},
+		{
+			name: "sync version is not global",
+			args: func(t *testing.T) []string {
+				dir := t.TempDir()
+				return []string{"sync", "--version", filepath.Join(dir, "source"), filepath.Join(dir, "target")}
+			},
+			wantCode:   2,
+			wantStderr: []string{"flag provided but not defined: -version"},
 		},
 		{
 			name: "sync missing source",
@@ -157,9 +174,51 @@ func TestRunPrintsDockWarnings(t *testing.T) {
 	}
 }
 
+func TestRunSyncWithDockNoWarnings(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	target := filepath.Join(dir, "target")
+	mkdir(t, source)
+	makeApp(t, source, "Clean.app")
+	installDockutil(t, dir, "#!/bin/sh\nif [ \"$1\" = \"-L\" ]; then\n\texit 0\nfi\nexit 0\n")
+
+	code, stdout, stderr := captureRun(t, []string{"sync", source, target})
+	if code != 0 {
+		t.Fatalf("run() code = %d; want 0; stdout = %q stderr = %q", code, stdout, stderr)
+	}
+	if !strings.Contains(stdout, "Synced 1 apps to") {
+		t.Errorf("stdout = %q; want sync success", stdout)
+	}
+	if strings.Contains(stderr, "warning:") {
+		t.Errorf("stderr = %q; want no warnings", stderr)
+	}
+}
+
+func TestRunPrintsMultipleDockWarnings(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	target := filepath.Join(dir, "target")
+	mkdir(t, source)
+	makeApp(t, source, "One.app")
+	makeApp(t, source, "Two.app")
+	installDockutil(t, dir, "#!/bin/sh\nif [ \"$1\" = \"-L\" ]; then\n\tprintf 'One\\t/nix/store/old/One.app\\nTwo\\t/nix/store/old/Two.app\\n'\n\texit 0\nfi\nif [ \"$1\" = \"--add\" ]; then\n\tcase \"$4\" in\n\t\tOne) printf 'error1' >&2 ;;\n\t\tTwo) printf 'error2' >&2 ;;\n\tesac\n\texit 1\nfi\nexit 0\n")
+
+	code, stdout, stderr := captureRun(t, []string{"sync", source, target})
+	if code != 0 {
+		t.Fatalf("run() code = %d; want 0; stdout = %q stderr = %q", code, stdout, stderr)
+	}
+	if !strings.Contains(stderr, "warning: Failed to update One: error1") {
+		t.Errorf("stderr = %q; want first dock warning", stderr)
+	}
+	if !strings.Contains(stderr, "warning: Failed to update Two: error2") {
+		t.Errorf("stderr = %q; want second dock warning", stderr)
+	}
+}
+
 func captureRun(t *testing.T, args []string) (int, string, string) {
 	t.Helper()
 
+	var stdout, stderr bytes.Buffer
 	oldStdout, oldStderr := os.Stdout, os.Stderr
 	stdoutReader, stdoutWriter, err := os.Pipe()
 	if err != nil {
@@ -172,9 +231,19 @@ func captureRun(t *testing.T, args []string) (int, string, string) {
 
 	os.Stdout = stdoutWriter
 	os.Stderr = stderrWriter
+
+	stdoutDone := make(chan error, 1)
+	stderrDone := make(chan error, 1)
+	go func() {
+		_, err := io.Copy(&stdout, stdoutReader)
+		stdoutDone <- err
+	}()
+	go func() {
+		_, err := io.Copy(&stderr, stderrReader)
+		stderrDone <- err
+	}()
+
 	code := run(args)
-	os.Stdout = oldStdout
-	os.Stderr = oldStderr
 
 	if err := stdoutWriter.Close(); err != nil {
 		t.Fatalf("close stdout writer: %v", err)
@@ -182,8 +251,15 @@ func captureRun(t *testing.T, args []string) (int, string, string) {
 	if err := stderrWriter.Close(); err != nil {
 		t.Fatalf("close stderr writer: %v", err)
 	}
-	stdout := readPipe(t, stdoutReader)
-	stderr := readPipe(t, stderrReader)
+	os.Stdout = oldStdout
+	os.Stderr = oldStderr
+
+	if err := <-stdoutDone; err != nil {
+		t.Fatalf("copy stdout: %v", err)
+	}
+	if err := <-stderrDone; err != nil {
+		t.Fatalf("copy stderr: %v", err)
+	}
 	if err := stdoutReader.Close(); err != nil {
 		t.Fatalf("close stdout reader: %v", err)
 	}
@@ -191,24 +267,7 @@ func captureRun(t *testing.T, args []string) (int, string, string) {
 		t.Fatalf("close stderr reader: %v", err)
 	}
 
-	return code, stdout, stderr
-}
-
-func readPipe(t *testing.T, file *os.File) string {
-	t.Helper()
-
-	var builder strings.Builder
-	buf := make([]byte, 1024)
-	for {
-		n, err := file.Read(buf)
-		if n > 0 {
-			builder.Write(buf[:n])
-		}
-		if err != nil {
-			break
-		}
-	}
-	return builder.String()
+	return code, stdout.String(), stderr.String()
 }
 
 func mkdir(t *testing.T, path string) {

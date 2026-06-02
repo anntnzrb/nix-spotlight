@@ -17,7 +17,7 @@ in
 
   options.services.nix-spotlight.package = lib.mkOption {
     type = lib.types.package;
-    default = self.packages.${pkgs.stdenv.hostPlatform.system}.python;
+    default = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
     description = "The nix-spotlight package to use.";
   };
 

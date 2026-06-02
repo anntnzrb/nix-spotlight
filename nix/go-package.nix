@@ -3,13 +3,22 @@
   self,
   systems,
 }:
+let
+  version = "0.2.0-dev";
+in
 pkgs.buildGoModule {
   pname = "nix-spotlight";
-  version = "0.2.0-dev";
+  inherit version;
 
   src = self;
 
   vendorHash = null;
+
+  ldflags = [
+    "-s"
+    "-w"
+    "-X main.version=${version}"
+  ];
 
   nativeCheckInputs = [ pkgs.golangci-lint ];
 
