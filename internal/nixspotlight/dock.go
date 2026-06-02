@@ -35,7 +35,7 @@ func SyncDock(apps []string, dockutilPath string) DockSyncResult {
 	}
 
 	result := DockSyncResult{}
-	for _, line := range strings.Split(stdout, "\n") {
+	for line := range strings.SplitSeq(stdout, "\n") {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
