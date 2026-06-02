@@ -11,13 +11,19 @@ let
 in
 {
   options.programs.nix-spotlight = shared.mkOptions {
-    defaultSourceDir = "$HOME/Applications/Home Manager Apps";
-    defaultTargetDir = "$HOME/Applications/Home Manager Trampolines";
+    defaultSourceDir = "${config.home.homeDirectory}/Applications/Home Manager Apps";
+    defaultTargetDir = "${config.home.homeDirectory}/Applications/Home Manager Trampolines";
+  };
+
+  options.programs.nix-spotlight.package = lib.mkOption {
+    type = lib.types.package;
+    default = self.packages.${pkgs.stdenv.hostPlatform.system}.python;
+    description = "The nix-spotlight package to use.";
   };
 
   config = lib.mkIf cfg.enable {
     home.activation.nixSpotlight = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ${shared.mkSyncCommand { inherit pkgs self cfg; }}
+      ${shared.mkSyncCommand { inherit cfg; }}
     '';
   };
 }

@@ -22,15 +22,11 @@
     };
 
   mkSyncCommand =
-    {
-      pkgs,
-      self,
-      cfg,
-    }:
+    { cfg }:
     ''
-      ${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/nix-spotlight sync \
+      ${cfg.package}/bin/nix-spotlight sync \
         ${lib.optionalString (!cfg.syncDock) "--no-dock"} \
-        "${cfg.sourceDir}" \
-        "${cfg.targetDir}"
+        ${lib.escapeShellArg cfg.sourceDir} \
+        ${lib.escapeShellArg cfg.targetDir}
     '';
 }

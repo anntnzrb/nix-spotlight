@@ -11,10 +11,16 @@
       forSystems = nixpkgs.lib.genAttrs systems;
     in
     {
-      packages = forSystems (system: {
-        default = import "${self}/nix/package.nix" {
+      packages = forSystems (system: let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in {
+        python = import "${self}/nix/package.nix" { inherit pkgs self systems; };
+        default = self.packages.${system}.python;
+      });
+
+      devShells = forSystems (system: {
+        default = import "${self}/nix/devshell.nix" {
           pkgs = nixpkgs.legacyPackages.${system};
-          inherit self systems;
         };
       });
 

@@ -1,0 +1,57 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - errname
+    - exhaustive
+    - forbidigo
+    - gocritic
+    - godot
+    - godox
+    - gofumpt
+    - gosec
+    - ireturn
+    - misspell
+    - musttag
+    - nilerr
+    - nilnil
+    - noctx
+    - prealloc
+    - revive
+    - staticcheck
+    - thelper
+    - unconvert
+    - unparam
+    - wastedassign
+
+  settings:
+    forbidigo:
+      forbid:
+        - pattern: 'ioutil\..*'
+        - pattern: '^fmt\.Print'
+          msg: "use slog for structured logging, not fmt.Print"
+    revive:
+      rules:
+        - name: unused-parameter
+          severity: warning
+        - name: context-as-argument
+          severity: warning
+
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: 'cmd/'
+        linters:
+          - forbidigo
+
+formatters:
+  enable:
+    - gofumpt
+  exclusions:
+    generated: lax
