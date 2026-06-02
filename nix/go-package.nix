@@ -22,7 +22,7 @@ pkgs.buildGoModule {
   ];
 
   nativeCheckInputs = [ pkgs.golangci-lint ];
-
+  nativeBuildInputs = [ pkgs.removeReferencesTo ];
   checkPhase = ''
     runHook preCheck
     export GOLANGCI_LINT_CACHE="''${TMPDIR:-/tmp}/golangci-lint-cache"
@@ -31,6 +31,12 @@ pkgs.buildGoModule {
     go vet ./...
     go test -race -count=1 -shuffle=on ./...
     runHook postCheck
+  '';
+
+  # macOS provides system zoneinfo — the tzdata reference embedded by
+  # Go's time package is pure waste in the runtime closure (saves ~2 MiB).
+  postFixup = ''
+    remove-references-to -t ${pkgs.tzdata} "$out/bin/nix-spotlight"
   '';
 
   meta = {
