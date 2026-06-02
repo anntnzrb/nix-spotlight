@@ -9,10 +9,10 @@ import (
 )
 
 // GatherApps gathers all valid .app bundles from a directory.
-func GatherApps(fromDir string) ([]App, error) {
+func GatherApps(fromDir string) []App {
 	entries, err := os.ReadDir(fromDir)
 	if err != nil {
-		return []App{}, nil //nolint:nilerr // silent empty on unreadable directory
+		return []App{}
 	}
 
 	apps := make([]App, 0)
@@ -25,6 +25,10 @@ func GatherApps(fromDir string) ([]App, error) {
 				apps = append(apps, app)
 			}
 		}
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
 		if entry.IsDir() && !strings.HasSuffix(name, ".app") {
 			nestedEntries, err := os.ReadDir(filepath.Join(fromDir, name))
 			if err != nil {
@@ -41,7 +45,7 @@ func GatherApps(fromDir string) ([]App, error) {
 		}
 	}
 
-	return apps, nil
+	return apps
 }
 
 // CreateTrampoline creates a symlink-based trampoline for a .app bundle.
@@ -129,7 +133,7 @@ func SyncTrampolines(fromDir, toDir string) ([]string, error) {
 		resolvedFromDir, err2 := filepath.EvalSymlinks(fromDir)
 		if err2 == nil {
 			rel, err3 := filepath.Rel(resolvedToDir, resolvedFromDir)
-			if err3 == nil && !strings.HasPrefix(rel, "..") && rel != "." {
+			if err3 == nil && rel != "." && !strings.HasPrefix(rel, "..") {
 				return nil, fmt.Errorf("target path must not contain source: %s", toDir)
 			}
 		}
@@ -142,10 +146,7 @@ func SyncTrampolines(fromDir, toDir string) ([]string, error) {
 		return nil, err
 	}
 
-	apps, err := GatherApps(fromDir)
-	if err != nil {
-		return nil, err
-	}
+	apps := GatherApps(fromDir)
 
 	trampolines := make([]string, 0, len(apps))
 	for _, app := range apps {

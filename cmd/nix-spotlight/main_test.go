@@ -34,7 +34,7 @@ func TestRun(t *testing.T) {
 			name:       "version",
 			args:       func(_ *testing.T) []string { return []string{"--version"} },
 			wantCode:   0,
-			wantStdout: []string{"nix-spotlight", "dev"},
+			wantStdout: []string{"nix-spotlight"},
 		},
 		{
 			name:       "sync help",

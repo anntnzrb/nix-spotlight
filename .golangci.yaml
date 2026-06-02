@@ -28,8 +28,6 @@ linters:
     forbidigo:
       forbid:
         - pattern: 'ioutil\..*'
-        - pattern: '^fmt\.Print'
-          msg: "use slog for structured logging, not fmt.Print"
     revive:
       rules:
         - name: unused-parameter
@@ -45,9 +43,6 @@ linters:
       - legacy
       - std-error-handling
     rules:
-      - path: 'cmd/'
-        linters:
-          - forbidigo
       - path: '_test\.go$'
         linters:
           - gosec

@@ -210,21 +210,14 @@ func TestGatherApps(t *testing.T) {
 	makeTrampolineTestApp(t, filepath.Join(nested, validAppNames[1]))
 	makeTrampolineTestDir(t, filepath.Join(tmp, "Invalid.app"))
 
-	apps, err := GatherApps(tmp)
-	if err != nil {
-		t.Fatalf("GatherApps() error = %v", err)
-	}
+	apps := GatherApps(tmp)
 
 	if len(apps) != len(validAppNames) {
 		t.Fatalf("len(GatherApps()) = %d, want %d", len(apps), len(validAppNames))
 	}
-	names := make(map[string]bool, len(apps))
-	for _, app := range apps {
-		names[app.Name()] = true
-	}
-	for _, name := range validAppNames {
-		if !names[name] {
-			t.Fatalf("GatherApps() missing %q", name)
+	for i, name := range validAppNames {
+		if apps[i].Name() != name {
+			t.Fatalf("GatherApps()[%d].Name() = %q, want %q", i, apps[i].Name(), name)
 		}
 	}
 }
@@ -232,10 +225,7 @@ func TestGatherApps(t *testing.T) {
 func TestGatherAppsEmptyDir(t *testing.T) {
 	tmp := t.TempDir()
 
-	apps, err := GatherApps(tmp)
-	if err != nil {
-		t.Fatalf("GatherApps() error = %v", err)
-	}
+	apps := GatherApps(tmp)
 	if apps == nil {
 		t.Fatal("GatherApps() returned nil, want empty slice")
 	}
@@ -249,10 +239,7 @@ func TestGatherAppsNoValidApps(t *testing.T) {
 	makeTrampolineTestDir(t, filepath.Join(tmp, "Invalid1.app"))
 	makeTrampolineTestDir(t, filepath.Join(tmp, "Invalid2.app", "Contents"))
 
-	apps, err := GatherApps(tmp)
-	if err != nil {
-		t.Fatalf("GatherApps() error = %v", err)
-	}
+	apps := GatherApps(tmp)
 	if apps == nil {
 		t.Fatal("GatherApps() returned nil, want empty slice")
 	}
@@ -268,10 +255,7 @@ func TestGatherAppsNestedInvalid(t *testing.T) {
 	makeTrampolineTestApp(t, filepath.Join(nested, "Valid.app"))
 	makeTrampolineTestDir(t, filepath.Join(nested, "Invalid.app"))
 
-	apps, err := GatherApps(tmp)
-	if err != nil {
-		t.Fatalf("GatherApps() error = %v", err)
-	}
+	apps := GatherApps(tmp)
 	if len(apps) != 1 {
 		t.Fatalf("len(GatherApps()) = %d, want 1", len(apps))
 	}

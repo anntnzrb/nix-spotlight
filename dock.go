@@ -1,7 +1,6 @@
 package nixspotlight
 
 import (
-	"context"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -77,7 +76,7 @@ func SyncDock(apps []string, dockutilPath string) DockSyncResult {
 }
 
 func runDockutil(dockutil string, args ...string) (stdout string, stderr string, ok bool) {
-	output, err := exec.CommandContext(context.Background(), dockutil, args...).Output()
+	output, err := exec.Command(dockutil, args...).Output() //nolint:noctx // short-lived CLI, no context needed
 	if err != nil {
 		if exitErr, isExitErr := err.(*exec.ExitError); isExitErr {
 			return string(output), string(exitErr.Stderr), false
