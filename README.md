@@ -24,7 +24,7 @@ Unlike AppleScript-based solutions, nix-spotlight uses symlinks which properly h
 
 - **macOS** (aarch64 or x86_64)
 - **Nix** with flakes enabled
-- **dockutil** (optional) - for automatic Dock item syncing
+- **dockutil** (optional) — for automatic Dock item syncing
 
 ## Installation
 
@@ -83,8 +83,7 @@ This symlink-based approach (inspired by mac-app-util's `link-contents` branch):
 
 ## Why this exists
 
-Originally written in Python, now ported to Go for smaller Nix closures and faster activation.
-
+macOS Spotlight does not index `/nix/store/`. Other solutions use AppleScript, which breaks URL schemes and file associations. nix-spotlight uses filesystem symlinks — fast, correct, and invisible to the user after setup.
 ## License
 
 [AGPL-3.0](COPYING)

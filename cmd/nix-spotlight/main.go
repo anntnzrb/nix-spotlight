@@ -8,6 +8,7 @@ import (
 	nixspotlight "github.com/anntnzrb/nix-spotlight"
 )
 
+// version is set via ldflags at build time (e.g. -X main.version=0.2.0).
 var version = "dev"
 
 func main() {

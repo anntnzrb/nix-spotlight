@@ -8,7 +8,9 @@ import (
 	"time"
 )
 
-// GatherApps gathers all valid .app bundles from a directory.
+// GatherApps discovers valid .app bundles in fromDir.
+// It collects direct *.app entries first, then one-level nested */*.app entries
+// (e.g. KDE-style layout). Invalid apps (no Info.plist) are skipped.
 func GatherApps(fromDir string) []App {
 	entries, err := os.ReadDir(fromDir)
 	if err != nil {
@@ -48,7 +50,11 @@ func GatherApps(fromDir string) []App {
 	return apps
 }
 
-// CreateTrampoline creates a symlink-based trampoline for a .app bundle.
+// CreateTrampoline creates a trampoline app in targetDir for source.
+// If the trampoline path already exists as a symlink, it is removed first
+// to avoid operating through it. The trampoline is a directory containing a
+// single Contents symlink pointing to source.Contents().
+// Returns the trampoline path on success.
 func CreateTrampoline(source App, targetDir string) (string, error) {
 	trampoline := filepath.Join(targetDir, source.Name())
 
