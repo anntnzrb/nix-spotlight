@@ -279,8 +279,6 @@ func mkdir(t *testing.T, path string) {
 }
 
 // makeApp creates a minimal valid .app bundle in source with an Info.plist.
-//
-//nolint:unparam
 func makeApp(t *testing.T, source, name string) string {
 	t.Helper()
 	app := filepath.Join(source, name)

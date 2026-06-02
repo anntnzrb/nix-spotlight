@@ -1,6 +1,7 @@
 package nixspotlight
 
 import (
+	"errors"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -43,7 +44,7 @@ func SyncDock(apps []string, dockutilPath string) DockSyncResult {
 			continue
 		}
 
-		parts := strings.SplitN(line, "\t", 2)
+		parts := strings.SplitN(line, "\t", 3)
 		name := strings.TrimSpace(parts[0])
 		path := ""
 		if len(parts) > 1 {
@@ -78,10 +79,11 @@ func SyncDock(apps []string, dockutilPath string) DockSyncResult {
 func runDockutil(dockutil string, args ...string) (stdout string, stderr string, ok bool) {
 	output, err := exec.Command(dockutil, args...).Output() //nolint:noctx // short-lived CLI, no context needed
 	if err != nil {
-		if exitErr, isExitErr := err.(*exec.ExitError); isExitErr {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			return string(output), string(exitErr.Stderr), false
 		}
-		return string(output), "", false
+		return string(output), err.Error(), false
 	}
 	return string(output), "", true
 }

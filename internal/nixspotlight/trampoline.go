@@ -11,10 +11,10 @@ import (
 // GatherApps discovers valid .app bundles in fromDir.
 // It collects direct *.app entries first, then one-level nested */*.app entries
 // (e.g. KDE-style layout). Invalid apps (no Info.plist) are skipped.
-func GatherApps(fromDir string) []App {
+func GatherApps(fromDir string) ([]App, error) {
 	entries, err := os.ReadDir(fromDir)
 	if err != nil {
-		return []App{}
+		return nil, err
 	}
 
 	apps := make([]App, 0)
@@ -34,6 +34,8 @@ func GatherApps(fromDir string) []App {
 		if entry.IsDir() && !strings.HasSuffix(name, ".app") {
 			nestedEntries, err := os.ReadDir(filepath.Join(fromDir, name))
 			if err != nil {
+				// Intentionally skip unreadable nested directories; callers only need
+				// the top-level ReadDir failure to decide whether sync is safe.
 				continue
 			}
 			for _, nested := range nestedEntries {
@@ -47,7 +49,7 @@ func GatherApps(fromDir string) []App {
 		}
 	}
 
-	return apps
+	return apps, nil
 }
 
 // CreateTrampoline creates a trampoline app in targetDir for source.
@@ -71,23 +73,17 @@ func CreateTrampoline(source App, targetDir string) (string, error) {
 		return "", err
 	}
 
-	contentsLink := filepath.Join(trampoline, "Contents")
-	info, err = os.Lstat(contentsLink)
-	if err == nil {
-		switch {
-		case info.Mode()&os.ModeSymlink != 0:
-			err = os.Remove(contentsLink)
-		case info.IsDir():
-			err = os.RemoveAll(contentsLink)
-		default:
-			err = os.Remove(contentsLink)
-		}
-		if err != nil {
-			return "", err
-		}
-	} else if !os.IsNotExist(err) {
+	entries, err := os.ReadDir(trampoline)
+	if err != nil {
 		return "", err
 	}
+	for _, entry := range entries {
+		if err := os.RemoveAll(filepath.Join(trampoline, entry.Name())); err != nil {
+			return "", err
+		}
+	}
+
+	contentsLink := filepath.Join(trampoline, "Contents")
 
 	if err := os.Symlink(source.Contents(), contentsLink); err != nil {
 		return "", err
@@ -122,27 +118,39 @@ func SyncTrampolines(fromDir, toDir string) ([]string, error) {
 		return nil, err
 	}
 
-	resolvedFrom, err := resolvedPath(fromDir)
+	resolvedFromDir, err := resolvedPath(fromDir)
 	if err != nil {
 		return nil, err
 	}
-	resolvedTo, err := resolvedPath(toDir)
+	resolvedToDir, err := resolvedPath(toDir)
 	if err != nil {
 		return nil, err
 	}
-	if resolvedFrom == resolvedTo {
-		return nil, fmt.Errorf("source and target directories must differ: %s", fromDir)
+	fromInfo, err = os.Stat(resolvedFromDir)
+	if err != nil {
+		return nil, err
+	}
+	toExists := false
+	toInfo, err = os.Stat(resolvedToDir)
+	if err == nil {
+		toExists = true
+		if os.SameFile(fromInfo, toInfo) {
+			return nil, fmt.Errorf("source and target directories must differ: %s", fromDir)
+		}
+	} else if !os.IsNotExist(err) {
+		return nil, err
 	}
 
-	resolvedToDir, err := filepath.EvalSymlinks(toDir)
-	if err == nil {
-		resolvedFromDir, err2 := filepath.EvalSymlinks(fromDir)
-		if err2 == nil {
-			rel, err3 := filepath.Rel(resolvedToDir, resolvedFromDir)
-			if err3 == nil && rel != "." && !strings.HasPrefix(rel, "..") {
-				return nil, fmt.Errorf("target path must not contain source: %s", toDir)
-			}
+	if toExists {
+		rel, err := filepath.Rel(resolvedToDir, resolvedFromDir)
+		if err == nil && rel != "." && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return nil, fmt.Errorf("target path must not contain source: %s", toDir)
 		}
+	}
+
+	apps, err := GatherApps(fromDir)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := os.RemoveAll(toDir); err != nil {
@@ -151,8 +159,6 @@ func SyncTrampolines(fromDir, toDir string) ([]string, error) {
 	if err := os.MkdirAll(toDir, 0o755); err != nil {
 		return nil, err
 	}
-
-	apps := GatherApps(fromDir)
 
 	trampolines := make([]string, 0, len(apps))
 	for _, app := range apps {

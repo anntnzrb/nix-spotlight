@@ -42,7 +42,7 @@ func TestSyncDock(t *testing.T) {
 				if len(calls) != 1 {
 					t.Fatalf("calls = %d; want 1", len(calls))
 				}
-				wantArgs(t, calls[0], []string{"-L"})
+				wantStrings(t, calls[0], []string{"-L"})
 			},
 		},
 		{
@@ -77,7 +77,7 @@ func TestSyncDock(t *testing.T) {
 					t.Fatalf("calls = %d; want 2", len(calls))
 				}
 				resolved := mustEvalSymlinks(t, appPaths[0])
-				wantArgs(t, calls[1], []string{"--add", resolved, "--replacing", "MyApp"})
+				wantStrings(t, calls[1], []string{"--add", resolved, "--replacing", "MyApp"})
 			},
 		},
 		{
@@ -93,8 +93,32 @@ func TestSyncDock(t *testing.T) {
 					t.Fatalf("calls = %d; want 2", len(calls))
 				}
 				resolved := mustEvalSymlinks(t, appPaths[0])
-				wantArgs(t, calls[1], []string{"--add", resolved, "--replacing", "Different Name"})
+				wantStrings(t, calls[1], []string{"--add", resolved, "--replacing", "Different Name"})
 			},
+		},
+		{
+			name:         "updates_full_dockutil_output_by_path",
+			apps:         []string{"MyApp.app"},
+			fakeDockutil: true,
+			listStdout:   "Launcher\t/nix/store/abc123/Applications/MyApp.app\tpersistent-apps\t{}\tcom.example.MyApp",
+			wantUpdated:  1,
+			wantSkipped:  0,
+			checkCalls: func(t *testing.T, calls [][]string, appPaths []string) {
+				t.Helper()
+				if len(calls) != 2 {
+					t.Fatalf("calls = %d; want 2", len(calls))
+				}
+				resolved := mustEvalSymlinks(t, appPaths[0])
+				wantStrings(t, calls[1], []string{"--add", resolved, "--replacing", "Launcher"})
+			},
+		},
+		{
+			name:         "skips_dock_entries_with_empty_apps",
+			apps:         []string{},
+			fakeDockutil: true,
+			listStdout:   "MyApp\t/nix/store/abc123-myapp/Applications/MyApp.app",
+			wantUpdated:  0,
+			wantSkipped:  1,
 		},
 		{
 			name:         "skips_unmatched_nix_items",
@@ -208,9 +232,6 @@ exit 0
 	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
 		t.Fatalf("os.WriteFile(%q): %v", path, err)
 	}
-	if err := os.Chmod(path, 0o755); err != nil {
-		t.Fatalf("os.Chmod(%q): %v", path, err)
-	}
 	t.Setenv("DOCKUTIL_CALLS", callsPath)
 	return path, callsPath
 }
@@ -232,11 +253,6 @@ func readCalls(t *testing.T, path string) [][]string {
 		calls = append(calls, strings.Split(block, "\n"))
 	}
 	return calls
-}
-
-func wantArgs(t *testing.T, got []string, want []string) {
-	t.Helper()
-	wantStrings(t, got, want)
 }
 
 func wantStrings(t *testing.T, got []string, want []string) {

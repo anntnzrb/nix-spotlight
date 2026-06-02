@@ -3,31 +3,40 @@ version: "2"
 linters:
   default: none
   enable:
+    - bidichk
+    - bodyclose
+    - copyloopvar
+    - durationcheck
+    - errcheck
     - errname
+    - errorlint
     - exhaustive
-    - forbidigo
+    - exhaustive
     - gocritic
-    - godot
-    - godox
     - gosec
+    - ineffassign
     - ireturn
+    - makezero
     - misspell
     - musttag
     - nilerr
     - nilnil
     - noctx
+    - nolintlint
+    - perfsprint
     - prealloc
+    - predeclared
     - revive
     - staticcheck
     - thelper
+    - tparallel
     - unconvert
     - unparam
+    - unused
+    - usestdlibvars
     - wastedassign
 
   settings:
-    forbidigo:
-      forbid:
-        - pattern: 'ioutil\..*'
     revive:
       rules:
         - name: unused-parameter

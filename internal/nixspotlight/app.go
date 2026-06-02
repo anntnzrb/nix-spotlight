@@ -15,11 +15,6 @@ func NewApp(path string) App {
 	return App{path: path}
 }
 
-// Path returns the app bundle path.
-func (a App) Path() string {
-	return a.path
-}
-
 // Name returns the app bundle name.
 func (a App) Name() string {
 	return filepath.Base(a.path)

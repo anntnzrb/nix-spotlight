@@ -201,6 +201,33 @@ func TestCreateTrampolineSymlinkedAppDir(t *testing.T) {
 	assertTrampolineContentsLink(t, trampoline, source)
 }
 
+func TestCreateTrampolineRemovesStaleFiles(t *testing.T) {
+	tmp := t.TempDir()
+	sourceDir := filepath.Join(tmp, "source")
+	makeTrampolineTestDir(t, sourceDir)
+	source := makeTrampolineTestApp(t, filepath.Join(sourceDir, "MyApp.app"))
+
+	targetDir := filepath.Join(tmp, "target")
+	trampolineDir := filepath.Join(targetDir, "MyApp.app")
+	makeTrampolineTestDir(t, trampolineDir)
+	makeTrampolineTestFile(t, filepath.Join(trampolineDir, "stale"))
+	makeTrampolineTestFile(t, filepath.Join(trampolineDir, "Resources", "stale"))
+
+	trampoline, err := CreateTrampoline(source, targetDir)
+	if err != nil {
+		t.Fatalf("CreateTrampoline() error = %v", err)
+	}
+
+	entries, err := os.ReadDir(trampoline)
+	if err != nil {
+		t.Fatalf("ReadDir(%q): %v", trampoline, err)
+	}
+	if len(entries) != 1 || entries[0].Name() != "Contents" {
+		t.Fatalf("ReadDir(%q) = %v, want only Contents", trampoline, entries)
+	}
+	assertTrampolineContentsLink(t, trampoline, source)
+}
+
 func TestGatherApps(t *testing.T) {
 	tmp := t.TempDir()
 	validAppNames := []string{"App1.app", "App2.app"}
@@ -210,7 +237,10 @@ func TestGatherApps(t *testing.T) {
 	makeTrampolineTestApp(t, filepath.Join(nested, validAppNames[1]))
 	makeTrampolineTestDir(t, filepath.Join(tmp, "Invalid.app"))
 
-	apps := GatherApps(tmp)
+	apps, err := GatherApps(tmp)
+	if err != nil {
+		t.Fatalf("GatherApps() error = %v", err)
+	}
 
 	if len(apps) != len(validAppNames) {
 		t.Fatalf("len(GatherApps()) = %d, want %d", len(apps), len(validAppNames))
@@ -225,7 +255,10 @@ func TestGatherApps(t *testing.T) {
 func TestGatherAppsEmptyDir(t *testing.T) {
 	tmp := t.TempDir()
 
-	apps := GatherApps(tmp)
+	apps, err := GatherApps(tmp)
+	if err != nil {
+		t.Fatalf("GatherApps() error = %v", err)
+	}
 	if apps == nil {
 		t.Fatal("GatherApps() returned nil, want empty slice")
 	}
@@ -239,7 +272,10 @@ func TestGatherAppsNoValidApps(t *testing.T) {
 	makeTrampolineTestDir(t, filepath.Join(tmp, "Invalid1.app"))
 	makeTrampolineTestDir(t, filepath.Join(tmp, "Invalid2.app", "Contents"))
 
-	apps := GatherApps(tmp)
+	apps, err := GatherApps(tmp)
+	if err != nil {
+		t.Fatalf("GatherApps() error = %v", err)
+	}
 	if apps == nil {
 		t.Fatal("GatherApps() returned nil, want empty slice")
 	}
@@ -255,7 +291,10 @@ func TestGatherAppsNestedInvalid(t *testing.T) {
 	makeTrampolineTestApp(t, filepath.Join(nested, "Valid.app"))
 	makeTrampolineTestDir(t, filepath.Join(nested, "Invalid.app"))
 
-	apps := GatherApps(tmp)
+	apps, err := GatherApps(tmp)
+	if err != nil {
+		t.Fatalf("GatherApps() error = %v", err)
+	}
 	if len(apps) != 1 {
 		t.Fatalf("len(GatherApps()) = %d, want 1", len(apps))
 	}
@@ -330,6 +369,70 @@ func TestSyncTrampolinesEmptySource(t *testing.T) {
 		t.Fatalf("len(SyncTrampolines()) = %d, want 0", len(trampolines))
 	}
 	assertPathExists(t, target)
+}
+
+func TestSyncTrampolinesTargetSymlink(t *testing.T) {
+	tmp := t.TempDir()
+	source := filepath.Join(tmp, "source")
+	makeTrampolineTestDir(t, source)
+	target := filepath.Join(tmp, "target")
+	realTarget := filepath.Join(tmp, "real-target")
+	makeTrampolineTestDir(t, realTarget)
+	if err := os.Symlink(realTarget, target); err != nil {
+		t.Fatalf("Symlink(%q, %q): %v", realTarget, target, err)
+	}
+
+	_, err := SyncTrampolines(source, target)
+	if err == nil {
+		t.Fatal("SyncTrampolines() error = nil, want error")
+	}
+	want := "target path must not be a symlink: " + target
+	if err.Error() != want {
+		t.Fatalf("SyncTrampolines() error = %q, want %q", err.Error(), want)
+	}
+}
+
+func TestSyncTrampolinesTargetContainsSource(t *testing.T) {
+	tmp := t.TempDir()
+	target := filepath.Join(tmp, "target")
+	source := filepath.Join(target, "child")
+	makeTrampolineTestDir(t, source)
+
+	_, err := SyncTrampolines(source, target)
+	if err == nil {
+		t.Fatal("SyncTrampolines() error = nil, want error")
+	}
+	want := "target path must not contain source: " + target
+	if err.Error() != want {
+		t.Fatalf("SyncTrampolines() error = %q, want %q", err.Error(), want)
+	}
+}
+
+func TestSyncTrampolinesSourceTargetSameSymlink(t *testing.T) {
+	tmp := t.TempDir()
+	realParent := filepath.Join(tmp, "real-parent")
+	sharedName := "shared"
+	makeTrampolineTestDir(t, filepath.Join(realParent, sharedName))
+
+	sourceParent := filepath.Join(tmp, "source-parent")
+	targetParent := filepath.Join(tmp, "target-parent")
+	if err := os.Symlink(realParent, sourceParent); err != nil {
+		t.Fatalf("Symlink(%q, %q): %v", realParent, sourceParent, err)
+	}
+	if err := os.Symlink(realParent, targetParent); err != nil {
+		t.Fatalf("Symlink(%q, %q): %v", realParent, targetParent, err)
+	}
+	source := filepath.Join(sourceParent, sharedName)
+	target := filepath.Join(targetParent, sharedName)
+
+	_, err := SyncTrampolines(source, target)
+	if err == nil {
+		t.Fatal("SyncTrampolines() error = nil, want error")
+	}
+	want := "source and target directories must differ: " + source
+	if err.Error() != want {
+		t.Fatalf("SyncTrampolines() error = %q, want %q", err.Error(), want)
+	}
 }
 
 func TestSyncTrampolinesErrors(t *testing.T) {

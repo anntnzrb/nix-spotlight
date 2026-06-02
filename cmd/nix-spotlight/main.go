@@ -1,11 +1,12 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
 
-	nixspotlight "github.com/anntnzrb/nix-spotlight/internal/nixspotlight"
+	"github.com/anntnzrb/nix-spotlight/internal/nixspotlight"
 )
 
 // version is set via ldflags at build time (e.g. -X main.version=0.2.0).
@@ -39,7 +40,7 @@ func run(args []string) int {
 	noDock := fs.Bool("no-dock", false, "skip dock syncing")
 
 	if err := fs.Parse(syncFlagArgs(args[1:])); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return 0
 		}
 		return 2

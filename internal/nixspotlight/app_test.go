@@ -37,9 +37,6 @@ func TestAppProperties(t *testing.T) {
 
 			app := NewApp(appPath)
 
-			if got := app.Path(); got != appPath {
-				t.Fatalf("Path() = %q, want %q", got, appPath)
-			}
 			if got := app.Name(); got != tt.app {
 				t.Fatalf("Name() = %q, want %q", got, tt.app)
 			}
@@ -91,5 +88,21 @@ func TestAppInvalid(t *testing.T) {
 				t.Fatal("IsValid() = true, want false")
 			}
 		})
+	}
+}
+
+func TestAppIsValidContentsNotDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	appPath := filepath.Join(tmpDir, "Invalid.app")
+	if err := os.Mkdir(appPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(appPath, "Contents"), []byte{}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	app := NewApp(appPath)
+	if app.IsValid() {
+		t.Fatal("IsValid() = true, want false")
 	}
 }
