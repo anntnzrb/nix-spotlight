@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	nixspotlight "github.com/anntnzrb/nix-spotlight"
+	nixspotlight "github.com/anntnzrb/nix-spotlight/internal/nixspotlight"
 )
 
 // version is set via ldflags at build time (e.g. -X main.version=0.2.0).

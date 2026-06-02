@@ -4,6 +4,7 @@ result-*
 
 # Go
 go.sum
+vendor/
 
 # IDEs
 .idea/
