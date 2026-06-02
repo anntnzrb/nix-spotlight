@@ -5,21 +5,23 @@
   outputs =
     { self, nixpkgs }:
     let
-      systems = [
+      darwinSystems = [
         "aarch64-darwin"
         "x86_64-darwin"
       ];
-      forSystems = nixpkgs.lib.genAttrs systems;
+      allSystems = darwinSystems ++ [ "x86_64-linux" ];
+      forDarwin = nixpkgs.lib.genAttrs darwinSystems;
+      forAll = nixpkgs.lib.genAttrs allSystems;
     in
     {
-      packages = forSystems (system: let
+      packages = forDarwin (system: let
         pkgs = nixpkgs.legacyPackages.${system};
       in {
-        go = import "${self}/nix/go-package.nix" { inherit pkgs self systems; };
+        go = import "${self}/nix/go-package.nix" { inherit pkgs self; systems = darwinSystems; };
         default = self.packages.${system}.go;
       });
 
-      devShells = forSystems (system: {
+      devShells = forAll (system: {
         default = import "${self}/nix/devshell.nix" {
           pkgs = nixpkgs.legacyPackages.${system};
         };
@@ -35,7 +37,7 @@
         imports = [ "${self}/nix/modules/darwin.nix" ];
       };
 
-      formatter = forSystems (
+      formatter = forDarwin (
         system: import "${self}/nix/formatter.nix" { pkgs = nixpkgs.legacyPackages.${system}; }
       );
     };
