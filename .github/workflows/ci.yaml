@@ -1,0 +1,28 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@v16
+
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
+
+      - name: flake check
+        run: nix flake check --allow-import-from-derivation
+
+      - name: go build + vet + lint
+        run: |
+          nix develop .# --command bash -c '
+            go build ./...
+            go vet ./...
+            golangci-lint run ./...
+          '
