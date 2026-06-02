@@ -24,7 +24,6 @@ Unlike AppleScript-based solutions, nix-spotlight uses symlinks which properly h
 
 - **macOS** (aarch64 or x86_64)
 - **Nix** with flakes enabled
-- **Python 3.13+** (provided by the flake)
 - **dockutil** (optional) - for automatic Dock item syncing
 
 ## Installation
@@ -84,16 +83,7 @@ This symlink-based approach (inspired by mac-app-util's `link-contents` branch):
 
 ## Why this exists
 
-This project was born from some minor issues with [mac-app-util](https://github.com/hraban/mac-app-util). While it solves the Spotlight indexing problem, its AppleScript-based trampolines break URL handling - clicking links in other apps wouldn't open my browser (Zen Browser installed via Nix).
-
-The core issue: AppleScript wrappers don't forward URL arguments to the target application. This means `open -a "My Browser" https://example.com` silently drops the URL.
-
-**Why rewrite instead of contributing upstream?**
-
-- mac-app-util is written in Common Lisp - a language with a smaller user base
-- Python is ubiquitous, making this codebase accessible to virtually any developer
-- Python stdlib is already present on macOS; Common Lisp requires pulling in SBCL
-- The fix required a fundamental architecture change (symlinks vs AppleScript), not a patch
+Originally written in Python, now ported to Go for smaller Nix closures and faster activation.
 
 ## License
 
