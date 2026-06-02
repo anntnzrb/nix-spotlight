@@ -1,4 +1,5 @@
 {
+# nix-spotlight flake for macOS Spotlight trampolines around Nix .app bundles.
   inputs.nixpkgs.url = "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.xz";
 
   outputs =

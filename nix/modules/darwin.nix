@@ -1,4 +1,5 @@
 {
+# nix-darwin module for system-scoped nix-spotlight trampoline sync.
   pkgs,
   lib,
   config,

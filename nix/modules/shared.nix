@@ -1,3 +1,4 @@
+# Shared module options and activation command construction.
 { lib }:
 {
   mkOptions =

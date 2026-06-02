@@ -1,4 +1,5 @@
 {
+# buildGoModule derivation for nix-spotlight.
   pkgs,
   self,
   systems,

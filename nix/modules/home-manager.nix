@@ -1,4 +1,5 @@
 {
+# Home Manager module for user-scoped nix-spotlight trampoline sync.
   pkgs,
   lib,
   config,

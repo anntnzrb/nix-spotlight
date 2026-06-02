@@ -215,6 +215,7 @@ func TestRunPrintsMultipleDockWarnings(t *testing.T) {
 	}
 }
 
+// captureRun runs the CLI with args and returns the exit code, captured stdout, and captured stderr.
 func captureRun(t *testing.T, args []string) (int, string, string) {
 	t.Helper()
 
@@ -277,6 +278,8 @@ func mkdir(t *testing.T, path string) {
 	}
 }
 
+// makeApp creates a minimal valid .app bundle in source with an Info.plist.
+//
 //nolint:unparam
 func makeApp(t *testing.T, source, name string) string {
 	t.Helper()
@@ -289,6 +292,7 @@ func makeApp(t *testing.T, source, name string) string {
 	return app
 }
 
+// assertTrampoline checks that target/name/Contents is a symlink.
 func assertTrampoline(t *testing.T, target, name string) {
 	t.Helper()
 
@@ -301,6 +305,7 @@ func assertTrampoline(t *testing.T, target, name string) {
 	}
 }
 
+// installDockutil writes a fake dockutil script to dir/bin/dockutil and prepends it to PATH.
 func installDockutil(t *testing.T, dir, script string) {
 	t.Helper()
 

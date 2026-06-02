@@ -73,6 +73,9 @@ func printUsage(out *os.File) {
 	fmt.Fprintln(out, "usage: nix-spotlight sync <from> <to> [--no-dock]")
 }
 
+// syncFlagArgs moves --no-dock flags before positional arguments
+// so Go's flag package can parse them correctly (it stops at the
+// first non-flag argument).
 func syncFlagArgs(args []string) []string {
 	normalized := make([]string, 0, len(args))
 	positionals := make([]string, 0, len(args))

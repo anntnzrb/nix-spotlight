@@ -173,6 +173,9 @@ func SyncTrampolines(fromDir, toDir string) ([]string, error) {
 	return trampolines, nil
 }
 
+// resolvedPath returns the canonical absolute path for path.
+// It resolves symlinks and handles paths where intermediate components
+// do not yet exist by walking up from the leaf.
 func resolvedPath(path string) (string, error) {
 	resolved, err := filepath.EvalSymlinks(path)
 	if err == nil {

@@ -178,6 +178,7 @@ func TestSyncDock(t *testing.T) {
 	}
 }
 
+// writeFakeDockutil creates a fake dockutil executable that logs all invocations.
 func writeFakeDockutil(t *testing.T) (string, string) {
 	t.Helper()
 	dir := t.TempDir()
@@ -214,6 +215,7 @@ exit 0
 	return path, callsPath
 }
 
+// readCalls parses the fake dockutil call log into [][]string.
 func readCalls(t *testing.T, path string) [][]string {
 	t.Helper()
 	data, err := os.ReadFile(path)

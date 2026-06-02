@@ -1,4 +1,5 @@
 {
+# Treefmt configuration for Nix and Go formatting.
   pkgs,
 }:
 pkgs.nixfmt-tree.override {

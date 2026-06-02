@@ -1,4 +1,5 @@
 {
+# Go development shell with linting, formatting, and language-server tools.
   pkgs,
 }:
 pkgs.mkShell {
