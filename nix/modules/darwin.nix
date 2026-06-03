@@ -11,19 +11,16 @@ let
   cfg = config.services.nix-spotlight;
 in
 {
-  options.services.nix-spotlight = lib.mkMerge [
-    (shared.mkOptions {
-      defaultSourceDir = "/Applications/Nix Apps";
-      defaultTargetDir = "/Applications/Nix Trampolines";
-    })
-    {
-      package = lib.mkOption {
-        type = lib.types.package;
-        default = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
-        description = "The nix-spotlight package to use.";
-      };
-    }
-  ];
+  options.services.nix-spotlight = (shared.mkOptions {
+    defaultSourceDir = "/Applications/Nix Apps";
+    defaultTargetDir = "/Applications/Nix Trampolines";
+  }) // {
+    package = lib.mkOption {
+      type = lib.types.package;
+      default = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+      description = "The nix-spotlight package to use.";
+    };
+  };
 
   config = lib.mkIf cfg.enable {
     system.activationScripts.postActivation.text = ''
