@@ -6,6 +6,15 @@
 
 macOS Spotlight integration for Nix apps.
 
+## Archived
+
+This project is no longer maintained. Home Manager and nix-darwin now handle the problem natively:
+
+- Home Manager's `targets.darwin.copyApps` copies app bundles into `~/Applications/Home Manager Apps` as real directories that Spotlight indexes. It is enabled by default for `home.stateVersion` 25.11 and later; older configurations can set `targets.darwin.copyApps.enable = true` and `targets.darwin.linkApps.enable = false`.
+- nix-darwin copies system applications into `/Applications/Nix Apps`.
+
+Copied bundles also keep a stable path, so Dock items survive rebuilds without extra tooling.
+
 ## What it does
 
 Nix-installed `.app` bundles live in `/nix/store/` which Spotlight doesn't index. This tool creates "trampoline" apps in indexed locations (`~/Applications/`) that Spotlight can find.
